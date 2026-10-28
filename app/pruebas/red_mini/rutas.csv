@@ -1,0 +1,13 @@
+ruta,orden,estacion
+R1,2,B
+R1,1,A
+R1,3,C
+R1,4,D
+R2,1,C
+R2,2,E
+R2,3,F
+R3,1,A
+R3,2,E
+R4,1,CALLE 26
+R4,2,CALLE 45
+R4,3,CALLE 80
