@@ -1,0 +1,3 @@
+# La app y el motor NO necesitan nada: solo Python.
+# pandas solo hace falta para volver a convertir el GTFS (datos/convertir_gtfs.py).
+pandas>=2.0

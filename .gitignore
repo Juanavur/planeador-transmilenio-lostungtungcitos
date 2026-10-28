@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.streamlit/secrets.toml
+
+# el GTFS original pesa ~54 MB: no se sube, se descarga y se convierte
+*.zip
+gtfs/
+gtfs_raw/
+
+# redes sintéticas de prueba
+red_[0-9]*/
