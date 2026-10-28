@@ -2,259 +2,394 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--FIN-CABECERA-->
 <title>Planeador TransMilenio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap">
 <style>
+  /* Layout: señalética de estación. Letrero oscuro para los nombres, insignias de ruta por zona,
+     itinerarios dibujados como diagrama de línea y un tablero LED para el próximo bus. */
   :root {
-    --bg: #f6f5f1; --panel: #ffffff; --texto: #1d1d1b; --suave: #6b6a65; --borde: #e3e1da;
-    --rojo: #c8102e; --rojo-suave: #fbe9ec; --verde: #1d7a46; --verde-suave: #e6f4ec;
-    --ambar: #9a6200; --ambar-suave: #fdf3dc; --azul: #2457c5; --gris: #a7a59d;
+    --bg: #eef0ee; --panel: #ffffff; --texto: #15181b; --suave: #5b6268; --borde: #dde1de; --linea: #c4c9c6;
+    --rojo: #c8102e; --sobre-rojo: #ffffff; --rojo-suave: #fbe7ea;
+    --letrero: #1b1f23; --sobre-letrero: #ffffff; --tablero: #0d1012; --led: #ffb21e;
+    --verde: #1d7a48; --verde-suave: #e3f2e9; --ambar: #8a5800; --ambar-suave: #fcf0d4;
+    --azul: #2357c4; --gris: #9aa09c;
+    --f-titulo: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --f-texto: "Barlow", "Segoe UI", system-ui, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #161614; --panel: #1f1f1c; --texto: #ecebe6; --suave: #a3a19a; --borde: #34332f;
-      --rojo: #ff5a6e; --rojo-suave: #3a1c21; --verde: #5ccf8f; --verde-suave: #16301f;
-      --ambar: #f0b74a; --ambar-suave: #352a12; --azul: #7ea6ff; --gris: #6d6b64;
+    :root:not([data-theme="light"]) {
+      --bg: #0f1113; --panel: #171a1d; --texto: #e8ebe9; --suave: #9ba3a0; --borde: #282d31; --linea: #3b4146;
+      --rojo: #e5354f; --sobre-rojo: #ffffff; --rojo-suave: #3a1a20;
+      --letrero: #22272c; --sobre-letrero: #ffffff; --tablero: #07090a; --led: #ffb21e;
+      --verde: #5cce8e; --verde-suave: #142c1e; --ambar: #f0b84c; --ambar-suave: #33280f;
+      --azul: #7ea6ff; --gris: #6b726e; color-scheme: dark;
     }
   }
+  :root[data-theme="dark"] {
+    --bg: #0f1113; --panel: #171a1d; --texto: #e8ebe9; --suave: #9ba3a0; --borde: #282d31; --linea: #3b4146;
+    --rojo: #e5354f; --sobre-rojo: #ffffff; --rojo-suave: #3a1a20;
+    --letrero: #22272c; --sobre-letrero: #ffffff; --tablero: #07090a; --led: #ffb21e;
+    --verde: #5cce8e; --verde-suave: #142c1e; --ambar: #f0b84c; --ambar-suave: #33280f;
+    --azul: #7ea6ff; --gris: #6b726e; color-scheme: dark;
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--texto);
-         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  header { background: var(--rojo); color: #fff; padding: 14px 20px; display: flex;
-           align-items: center; gap: 14px; flex-wrap: wrap; }
-  header h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: .2px; }
-  header .info { opacity: .85; font-size: 13px; }
-  header .acciones { margin-left: auto; display: flex; gap: 8px; }
-  header button { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.35); }
-  nav { display: flex; gap: 4px; padding: 0 16px; background: var(--panel);
-        border-bottom: 1px solid var(--borde); overflow-x: auto; }
-  nav button { border: 0; background: none; padding: 12px 14px; border-bottom: 3px solid transparent;
-               border-radius: 0; color: var(--suave); white-space: nowrap; }
-  nav button.activo { color: var(--texto); border-bottom-color: var(--rojo); font-weight: 600; }
-  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+  body { margin: 0; background: var(--bg); color: var(--texto); font: 16px/1.5 var(--f-texto);
+         font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+  .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+  /* ---------- barra superior y pestañas */
+  .barra { background: var(--panel); border-bottom: 1px solid var(--borde); }
+  .barra-in { max-width: 1040px; margin: 0 auto; padding-block: 12px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .marca { display: flex; align-items: center; gap: 10px; }
+  .glifo { width: 38px; height: 38px; flex: 0 0 38px; }
+  .marca b { display: block; font: 800 24px/1 var(--f-titulo); letter-spacing: .01em; text-transform: uppercase; }
+  .marca span { display: block; font-size: 13px; color: var(--suave); }
+  .info { font-size: 13px; color: var(--suave); padding-left: 12px; border-left: 1px solid var(--borde); }
+  .acciones { margin-left: auto; display: flex; gap: 6px; }
+  nav { background: var(--panel); border-bottom: 1px solid var(--borde); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+  .nav-in { max-width: 1040px; margin: 0 auto; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  nav button { border: 0; background: none; border-radius: 0; padding: 12px 12px 10px; color: var(--suave);
+               font: 700 16px/1 var(--f-titulo); letter-spacing: .04em; text-transform: uppercase; white-space: nowrap;
+               border-bottom: 3px solid transparent; }
+  nav button:hover { color: var(--texto); }
+  nav button.activo { color: var(--texto); border-bottom-color: var(--rojo); }
+
+  main { max-width: 1040px; margin: 0 auto; padding-block: 22px 64px; }
   section { display: none; } section.activa { display: block; }
-  .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px;
-             padding: 16px 18px; margin-bottom: 16px; }
-  h2 { font-size: 16px; margin: 0 0 12px; }
+  .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; align-items: start; }
+  .bloque { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 18px 20px 20px; min-width: 0; }
+  .bloque + .bloque, .rejilla + .bloque, .bloque + .rejilla { margin-top: 16px; }
+  .rejilla > .bloque { margin-top: 0; }
+  .cabeza { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  h2 { margin: 0; font: 700 22px/1.1 var(--f-titulo); letter-spacing: .01em; text-wrap: balance; }
+  .req { font: 700 12px/1 var(--f-titulo); letter-spacing: .08em; color: var(--rojo); background: var(--rojo-suave);
+         padding: 4px 7px; border-radius: 4px; }
+  .nota { font-size: 13px; color: var(--suave); margin: 0 0 16px; max-width: 75ch; }
+
+  /* ---------- controles */
   .fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
-  .fila > label { flex: 1 1 180px; }
-  label { display: block; font-size: 13px; color: var(--suave); }
-  input, select { width: 100%; margin-top: 4px; padding: 9px 10px; font: inherit; color: var(--texto);
-                  background: var(--bg); border: 1px solid var(--borde); border-radius: 7px; }
-  button { font: inherit; padding: 9px 14px; border-radius: 7px; border: 1px solid var(--borde);
+  .fila > label { flex: 1 1 170px; min-width: 0; }
+  label { display: block; font: 600 12px/1.2 var(--f-texto); color: var(--suave); letter-spacing: .02em; }
+  input, select { width: 100%; margin-top: 6px; padding: 10px 12px; font: 500 15px var(--f-texto); color: var(--texto);
+                  background: var(--bg); border: 1px solid var(--borde); border-radius: 6px; min-width: 0; }
+  input:focus, select:focus { border-color: var(--linea); }
+  .buscador { font: 700 26px/1.1 var(--f-titulo); letter-spacing: .02em; text-transform: uppercase; padding: 12px 14px; }
+  button { font: 600 15px var(--f-texto); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--borde);
            background: var(--panel); color: var(--texto); cursor: pointer; }
-  button.principal { background: var(--rojo); color: #fff; border-color: var(--rojo); }
-  button:disabled { opacity: .5; cursor: wait; }
-  .aviso { padding: 10px 12px; border-radius: 7px; margin-top: 12px; }
+  button:hover { border-color: var(--linea); }
+  button.principal { background: var(--rojo); border-color: var(--rojo); color: var(--sobre-rojo); }
+  button:disabled { opacity: .55; cursor: progress; }
+  button:focus-visible, input:focus-visible, select:focus-visible, nav button:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
+  .suave { color: var(--suave); font-size: 14px; }
+  .aviso { padding: 10px 12px; border-radius: 6px; margin-top: 12px; font-size: 15px; }
   .ok { background: var(--verde-suave); color: var(--verde); }
   .mal { background: var(--ambar-suave); color: var(--ambar); }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .chip { padding: 4px 10px; border-radius: 99px; background: var(--bg); border: 1px solid var(--borde);
-          font-size: 13px; cursor: pointer; }
-  .tramo { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px dashed var(--borde); }
-  .tramo:first-of-type { border-top: 0; }
-  .ruta { font-weight: 700; background: var(--rojo); color: #fff; border-radius: 6px; padding: 2px 8px;
-          min-width: 44px; text-align: center; }
-  .grande { font-size: 34px; font-weight: 700; }
-  .metricas { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
-  .metrica { background: var(--bg); border-radius: 8px; padding: 10px 12px; }
-  .metrica b { display: block; font-size: 22px; }
-  .lista { columns: 3 180px; margin: 10px 0 0; padding-left: 18px; }
-  .barra { display: grid; grid-template-columns: 28px 1fr 2fr 52px; gap: 8px; align-items: center; padding: 3px 0; }
-  .barra .fondo { background: var(--bg); border-radius: 4px; height: 10px; }
-  .barra .lleno { background: var(--rojo); border-radius: 4px; height: 10px; }
-  .recorrido { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 6px 0 12px; }
-  .recorrido span.p { background: var(--bg); border: 1px solid var(--borde); border-radius: 6px; padding: 2px 8px; font-size: 13px; }
-  .grafica { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; padding: 14px 0;
-             border-top: 1px solid var(--borde); }
-  .grafica:first-child { border-top: 0; }
-  @media (max-width: 640px) { .grafica { grid-template-columns: 1fr; } .barra { grid-template-columns: 24px 1fr 1fr 48px; } }
-  svg text { fill: var(--suave); font-size: 11px; }
-  .suave { color: var(--suave); font-size: 13px; }
+
+  /* ---------- letrero de estación */
+  .letrero { margin-top: 14px; background: var(--letrero); color: var(--sobre-letrero); border-radius: 8px; padding: 14px 16px;
+             display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+  .letrero b { font: 800 30px/1.05 var(--f-titulo); letter-spacing: .02em; text-transform: uppercase; overflow-wrap: anywhere; }
+  .letrero small { grid-column: 1 / -1; opacity: .75; font-size: 13px; }
+  .estado { font: 700 13px/1 var(--f-titulo); letter-spacing: .08em; text-transform: uppercase; padding: 6px 9px; border-radius: 4px; }
+  .estado.abierta { background: var(--verde); color: #fff; }
+  .estado.cerrada { background: var(--ambar); color: #fff; }
+  .rutas-letrero { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .sugerencias { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .chip { padding: 5px 10px; border-radius: 5px; background: var(--bg); border: 1px solid var(--borde);
+          font: 700 14px/1.2 var(--f-titulo); letter-spacing: .03em; cursor: pointer; color: var(--texto); }
+  .chip:hover { border-color: var(--linea); }
+  .lista { columns: 3 160px; column-gap: 20px; margin: 10px 0 0; padding: 0; list-style: none; }
+  .lista li { font: 600 15px/1.2 var(--f-titulo); letter-spacing: .02em; padding: 5px 0; border-bottom: 1px dashed var(--borde); break-inside: avoid; }
+
+  /* ---------- insignia de ruta */
+  .ruta { display: inline-block; min-width: 38px; text-align: center; padding: 3px 7px; border-radius: 5px;
+          font: 800 16px/1.15 var(--f-titulo); letter-spacing: .02em; color: #fff; background: var(--c, var(--letrero)); }
+  .ruta.mini { min-width: 30px; font-size: 13px; padding: 2px 5px; }
+
+  /* ---------- itinerario como diagrama de línea */
+  .resumen-viaje { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-top: 16px; }
+  .resumen-viaje b { font: 800 30px/1 var(--f-titulo); }
+  .itinerario { list-style: none; margin: 14px 0 0; padding: 0; }
+  .itinerario li { display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; }
+  .riel { position: relative; }
+  .parada .riel::before { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%;
+                          background: var(--panel); border: 5px solid var(--c, var(--letrero)); box-sizing: border-box; }
+  .parada.cambio .riel::before { border-color: var(--texto); background: var(--panel); width: 22px; height: 22px; left: 2px; top: 2px; }
+  .tramo .riel::before { content: ""; position: absolute; left: 10px; top: -2px; bottom: -2px; width: 6px; background: var(--c, var(--letrero)); }
+  .parada .txt { padding: 0 0 4px; }
+  .parada .txt b { display: block; font: 800 20px/1.25 var(--f-titulo); letter-spacing: .02em; text-transform: uppercase; }
+  .parada .txt > span { font-size: 14px; color: var(--suave); }
+  .tramo .txt { padding: 8px 0 14px; font-size: 14px; color: var(--suave); display: flex; gap: 8px; align-items: center; }
+
+  /* ---------- tablero LED */
+  .tablero { margin-top: 14px; background: var(--tablero); border-radius: 8px; padding: 14px 18px; color: var(--led);
+             display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+  .tablero .destino { font: 700 16px/1.2 var(--f-titulo); letter-spacing: .06em; text-transform: uppercase; color: #e9e3d2; overflow-wrap: anywhere; }
+  .tablero .hora { font: 800 44px/1 var(--f-titulo); letter-spacing: .04em; text-shadow: 0 0 12px rgba(255, 178, 30, .35); }
+  .tablero .falta { grid-column: 2 / -1; font: 600 14px/1 var(--f-titulo); letter-spacing: .08em; text-transform: uppercase; color: #b9b2a0; }
+
+  /* ---------- ranking */
+  .ranking { display: grid; gap: 4px; }
+  .barra-r { display: grid; grid-template-columns: 24px minmax(0, 1.2fr) minmax(0, 1fr) 46px; gap: 10px; align-items: center; padding: 4px 0; }
+  .barra-r .pos { font: 800 16px var(--f-titulo); color: var(--suave); }
+  .barra-r .nom { font: 700 16px/1.2 var(--f-titulo); letter-spacing: .02em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .barra-r .fondo { background: var(--bg); border-radius: 3px; height: 8px; }
+  .barra-r .lleno { background: var(--rojo); border-radius: 3px; height: 8px; }
+  .barra-r .n { text-align: right; font: 600 14px var(--f-texto); }
+
+  /* ---------- recorrido horizontal */
+  .linea-caja { overflow-x: auto; padding: 4px 0 8px; margin: 6px 0 14px; }
+  .linea-h { display: flex; min-width: max-content; }
+  .linea-h .p { position: relative; width: 104px; padding-top: 26px; text-align: center; font: 700 13px/1.15 var(--f-titulo);
+                letter-spacing: .02em; text-transform: uppercase; }
+  .linea-h .p::before { content: ""; position: absolute; top: 9px; left: 0; right: 0; height: 6px; background: var(--c, var(--letrero)); }
+  .linea-h .p:first-child::before { left: 50%; } .linea-h .p:last-child::before { right: 50%; }
+  .linea-h .p::after { content: ""; position: absolute; top: 3px; left: calc(50% - 9px); width: 18px; height: 18px; border-radius: 50%;
+                       background: var(--panel); border: 4px solid var(--c, var(--letrero)); box-sizing: border-box; }
+  .linea-h .p.cerrada { color: var(--suave); text-decoration: line-through; }
+  .sentido { font: 700 12px/1 var(--f-titulo); letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
+
+  /* ---------- métricas y gráficas */
+  .metricas { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 14px; }
+  .metrica { border-top: 3px solid var(--letrero); padding: 10px 0 0; }
+  .metrica span { font-size: 13px; color: var(--suave); }
+  .metrica b { display: block; font: 800 34px/1.05 var(--f-titulo); }
+  .graficas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr)); gap: 16px; margin-top: 16px; }
+  .grafica { border: 1px solid var(--borde); border-radius: 8px; padding: 14px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .grafica h3 { margin: 0; font: 700 18px/1.15 var(--f-titulo); letter-spacing: .01em; }
+  .grafica .esp { font: 700 13px var(--f-titulo); letter-spacing: .04em; color: var(--suave); }
+  .veredicto { align-self: start; font: 700 12px/1 var(--f-titulo); letter-spacing: .08em; text-transform: uppercase; padding: 5px 8px; border-radius: 4px; }
+  .veredicto.si { background: var(--verde-suave); color: var(--verde); }
+  .veredicto.no { background: var(--ambar-suave); color: var(--ambar); }
+  .veredicto.neutro { background: var(--bg); color: var(--suave); }
+  svg text { fill: var(--suave); font: 500 11px var(--f-texto); }
   .leyenda { display: flex; gap: 14px; font-size: 12px; color: var(--suave); }
-  .leyenda i { display: inline-block; width: 14px; height: 3px; vertical-align: middle; margin-right: 4px; }
-  .segmentos { display: inline-flex; border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; }
-  .segmentos button { border: 0; border-radius: 0; padding: 7px 14px; background: var(--panel); }
+  .leyenda i { display: inline-block; width: 16px; height: 3px; vertical-align: middle; margin-right: 5px; }
+
+  /* ---------- tabla de datos */
+  .segmentos { display: inline-flex; border: 1px solid var(--borde); border-radius: 6px; overflow: hidden; }
+  .segmentos button { border: 0; border-radius: 0; padding: 8px 14px; background: var(--panel);
+                      font: 700 15px/1 var(--f-titulo); letter-spacing: .04em; text-transform: uppercase; }
   .segmentos button + button { border-left: 1px solid var(--borde); }
-  .segmentos button.activo { background: var(--rojo); color: #fff; }
-  .tabla-caja { overflow: auto; max-height: 560px; border: 1px solid var(--borde); border-radius: 8px; }
+  .segmentos button.activo { background: var(--letrero); color: var(--sobre-letrero); }
+  .tabla-caja { overflow: auto; max-height: 560px; border: 1px solid var(--borde); border-radius: 8px; margin-top: 10px; }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
-  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--borde); white-space: nowrap; }
-  td.largo { white-space: normal; min-width: 260px; color: var(--suave); font-size: 13px; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  th { position: sticky; top: 0; background: var(--panel); cursor: pointer; user-select: none; font-weight: 600; }
-  th:hover { color: var(--rojo); }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+  td:first-child { font: 700 15px var(--f-titulo); letter-spacing: .02em; }
+  td.largo { white-space: normal; min-width: 280px; color: var(--suave); font-size: 13px; }
+  td.num, th.num { text-align: right; }
+  th { position: sticky; top: 0; background: var(--panel); cursor: pointer; user-select: none;
+       font: 700 13px var(--f-titulo); letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
+  th:hover { color: var(--texto); }
   tbody tr:hover { background: var(--bg); }
   tr.clic { cursor: pointer; }
   .cerrada { color: var(--ambar); font-weight: 600; }
+  /*CSS-WEB*/
+  @media (max-width: 560px) {
+    .info { border-left: 0; padding-left: 0; order: 3; width: 100%; }
+    .acciones button span { display: none; }
+    .letrero b { font-size: 26px; }
+    .tablero { grid-template-columns: auto minmax(0, 1fr); } .tablero .hora { grid-column: 1 / -1; }
+  }
 </style>
+<!--INICIO-CUERPO-->
 </head>
 <body>
-<header>
-  <h1>🚌 Planeador TransMilenio</h1>
-  <span class="info" id="info">Cargando…</span>
-  <div class="acciones">
-    <button onclick="cambio('deshacer')">↶ Deshacer</button>
-    <button onclick="cambio('rehacer')">↷ Rehacer</button>
+<!--FIN-CUERPO-->
+<header class="barra"><div class="barra-in gutter">
+  <div class="marca">
+    <svg class="glifo" viewBox="0 0 40 40" aria-hidden="true">
+      <rect width="40" height="40" rx="8" fill="var(--rojo)"/>
+      <path d="M9 28 L17 14 L24 22 L31 11" stroke="#fff" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="9" cy="28" r="3.6" fill="#fff"/><circle cx="31" cy="11" r="3.6" fill="#fff"/>
+    </svg>
+    <div><b>Planeador</b><span>TransMilenio · red troncal</span></div>
   </div>
-</header>
-<nav id="pestanas">
-  <button data-p="buscar" class="activo">🔎 Estaciones</button>
-  <button data-p="viajar">🧭 Viajar</button>
-  <button data-p="operar">🛠️ Operar la red</button>
-  <button data-p="fila">🚏 Fila de abordaje</button>
-  <button data-p="panel">📈 Rendimiento</button>
-  <button data-p="datos">📋 Datos</button>
-</nav>
-<main>
+  <span class="info" id="info">Cargando la red…</span>
+  <div class="acciones">
+    <button onclick="cambio('deshacer')" title="Deshacer el último cambio">↶ <span>Deshacer</span></button>
+    <button onclick="cambio('rehacer')" title="Rehacer">↷ <span>Rehacer</span></button>
+  </div>
+</div></header>
+<nav id="pestanas"><div class="nav-in gutter">
+  <button data-p="buscar" class="activo">Estaciones</button>
+  <button data-p="viajar">Viajar</button>
+  <button data-p="operar">Operar la red</button>
+  <button data-p="fila">Fila de abordaje</button>
+  <button data-p="panel">Rendimiento</button>
+  <button data-p="datos">Datos</button>
+</div></nav>
+<main class="gutter">
+  <!--NOTA-WEB-->
   <div id="global"></div>
 
   <!-- ===================== R1 R2 R3 ===================== -->
   <section id="buscar" class="activa">
-    <div class="tarjeta">
-      <h2>Buscar una estación</h2>
-      <div class="fila">
-        <label>Escribe una estación<input id="b-texto" placeholder="CALLE 26" autocomplete="off"></label>
-        <label style="flex:0 0 120px">Sugerencias (k)<input id="b-k" type="number" value="8" min="1" max="30"></label>
+    <div class="rejilla">
+      <div class="bloque">
+        <div class="cabeza"><h2>Buscar una estación</h2><span class="req">R1 · R2</span></div>
+        <label for="b-texto">Escribe el nombre</label>
+        <input id="b-texto" class="buscador" placeholder="Calle 26" autocomplete="off">
+        <div class="fila" style="margin-top:10px">
+          <label for="b-k" style="flex:0 0 150px">Sugerencias (k)<input id="b-k" type="number" value="8" min="1" max="30"></label>
+        </div>
+        <div id="b-estado"></div>
+        <div class="sugerencias" id="b-sugerencias"></div>
       </div>
-      <div id="b-estado"></div>
-      <div class="chips" id="b-sugerencias"></div>
-    </div>
-    <div class="tarjeta">
-      <h2>Listar un rango (orden alfabético)</h2>
-      <div class="fila">
-        <label>Desde<input id="r-desde" value="CALLE 26"></label>
-        <label>Hasta<input id="r-hasta" value="CALLE 80"></label>
+      <div class="bloque">
+        <div class="cabeza"><h2>Listar un rango</h2><span class="req">R3</span></div>
+        <div class="fila">
+          <label for="r-desde">Desde<input id="r-desde" value="CALLE 26"></label>
+          <label for="r-hasta">Hasta<input id="r-hasta" value="CALLE 80"></label>
+        </div>
+        <p class="suave" id="r-cuenta" style="margin:12px 0 0"></p>
+        <ul class="lista" id="r-lista"></ul>
       </div>
-      <p class="suave" id="r-cuenta"></p>
-      <ul class="lista" id="r-lista"></ul>
     </div>
   </section>
 
   <!-- ===================== R4 R5 R6 ===================== -->
   <section id="viajar">
-    <div class="tarjeta">
-      <h2>Planear un viaje</h2>
+    <div class="bloque">
+      <div class="cabeza"><h2>Planear un viaje</h2><span class="req">R5</span></div>
       <div class="fila">
-        <label>Origen<select id="v-origen"></select></label>
-        <label>Destino<select id="v-destino"></select></label>
+        <label for="v-origen">Origen<select id="v-origen"></select></label>
+        <label for="v-destino">Destino<select id="v-destino"></select></label>
       </div>
       <div id="v-plan"></div>
+      <!--REGISTRO-WEB-->
     </div>
-    <div class="tarjeta">
-      <h2>Próximo bus</h2>
-      <div class="fila">
-        <label>Estación<select id="p-estacion"></select></label>
-        <label>Ruta<select id="p-ruta"></select></label>
-        <label style="flex:0 0 130px">Hora<input id="p-hora" type="time" value="07:00"></label>
+    <div class="rejilla" style="margin-top:16px">
+      <div class="bloque">
+        <div class="cabeza"><h2>Próximo bus</h2><span class="req">R4</span></div>
+        <div class="fila">
+          <label for="p-estacion">Estación<select id="p-estacion"></select></label>
+          <label for="p-ruta" style="flex:0 1 120px">Ruta<select id="p-ruta"></select></label>
+          <label for="p-hora" style="flex:0 1 130px">Hora<input id="p-hora" type="time" value="07:00"></label>
+        </div>
+        <div id="p-resultado"></div>
       </div>
-      <div id="p-resultado"></div>
-    </div>
-    <div class="tarjeta">
-      <h2>Ranking de estaciones</h2>
-      <div class="fila"><label style="flex:0 0 160px">¿Cuántas? (k)<input id="k-rank" type="number" value="10" min="1" max="50"></label></div>
-      <div id="ranking" style="margin-top:10px"></div>
+      <div class="bloque">
+        <div class="cabeza"><h2>Las más concurridas</h2><span class="req">R6</span></div>
+        <div class="fila"><label for="k-rank" style="flex:0 0 150px">¿Cuántas? (k)<input id="k-rank" type="number" value="10" min="1" max="50"></label></div>
+        <div id="ranking" class="ranking" style="margin-top:12px"></div>
+      </div>
     </div>
   </section>
 
   <!-- ===================== R7 R8 R9 ===================== -->
   <section id="operar">
-    <div class="tarjeta">
-      <h2>Editar rutas</h2>
-      <label>Ruta<select id="o-ruta"></select></label>
+    <div class="bloque">
+      <div class="cabeza"><h2>Editar rutas</h2><span class="req">R7 · R9</span></div>
+      <label for="o-ruta" style="max-width:260px">Ruta<select id="o-ruta"></select></label>
       <div id="o-recorrido"></div>
       <div class="fila">
-        <label>Estación nueva (puede no existir aún)<input id="o-nueva"></label>
-        <label>Después de<select id="o-despues"></select></label>
-        <button class="principal" onclick="agregar()">Agregar</button>
+        <label for="o-nueva">Estación nueva (puede no existir aún)<input id="o-nueva" placeholder="Nombre de la parada"></label>
+        <label for="o-despues">Después de<select id="o-despues"></select></label>
+        <button class="principal" onclick="agregar()">Agregar parada</button>
       </div>
       <div class="fila" style="margin-top:12px">
-        <label>Quitar parada<select id="o-quitar"></select></label>
+        <label for="o-quitar">Quitar parada<select id="o-quitar"></select></label>
         <button onclick="quitar()">Quitar</button>
       </div>
       <div id="o-aviso"></div>
     </div>
-    <div class="tarjeta">
-      <h2>Cerrar y reabrir estaciones</h2>
+    <div class="bloque">
+      <div class="cabeza"><h2>Cerrar y reabrir estaciones</h2><span class="req">R8 · R9</span></div>
       <div class="fila">
-        <label>Estación abierta<select id="c-abierta"></select></label>
-        <button onclick="cerrar()">Cerrar</button>
+        <label for="c-abierta">Estación abierta<select id="c-abierta"></select></label>
+        <button onclick="cerrar()">Cerrar estación</button>
       </div>
       <div class="fila" style="margin-top:12px">
-        <label>Estación cerrada<input id="c-cerrada" placeholder="Nombre"></label>
+        <label for="c-cerrada">Estación cerrada<input id="c-cerrada" placeholder="Nombre"></label>
         <button onclick="reabrir()">Reabrir</button>
       </div>
       <div id="c-aviso"></div>
-      <p class="suave">Deshacer y rehacer (R9) están arriba y funcionan con cualquier cambio.</p>
+      <p class="suave" style="margin:14px 0 0">Deshacer y rehacer, arriba a la derecha, funcionan con cualquier cierre, reapertura o edición.</p>
     </div>
   </section>
 
   <!-- ===================== R10 ===================== -->
   <section id="fila">
-    <div class="tarjeta">
-      <h2>Simular la hora pico</h2>
+    <div class="bloque">
+      <div class="cabeza"><h2>Simular la hora pico</h2><span class="req">R10</span></div>
       <div class="fila">
-        <label>Pasajeros<input id="f-pasajeros" type="number" value="100000" min="1"></label>
-        <label>Llegan durante (min)<input id="f-ventana" type="number" value="120" min="1"></label>
-        <label>Un bus cada (min)<input id="f-frecuencia" type="number" value="0.25" step="0.05" min="0.05"></label>
-        <label>Cupo por bus<input id="f-capacidad" type="number" value="250" min="1"></label>
+        <label for="f-pasajeros">Pasajeros<input id="f-pasajeros" type="number" value="100000" min="1"></label>
+        <label for="f-ventana">Llegan durante (min)<input id="f-ventana" type="number" value="120" min="1"></label>
+        <label for="f-frecuencia">Un bus cada (min)<input id="f-frecuencia" type="number" value="0.25" step="0.05" min="0.05"></label>
+        <label for="f-capacidad">Cupo por bus<input id="f-capacidad" type="number" value="250" min="1"></label>
         <button class="principal" id="f-boton" onclick="simular()">Simular</button>
       </div>
-      <div id="f-resultado"></div>
+      <div id="f-resultado"><p class="suave" style="margin:14px 0 0">Un biarticulado lleva unas 250 personas. Con un bus cada
+        15 segundos y 100 000 pasajeros en dos horas, la fila crece en el pico y se vacía al final.</p></div>
     </div>
   </section>
 
   <!-- ===================== R11 ===================== -->
   <section id="panel">
-    <div class="tarjeta">
-      <h2>Panel de rendimiento</h2>
-      <p class="suave">Se generan redes de tamaño creciente (cada una el doble de la anterior), se corre cada operación
+    <div class="bloque">
+      <div class="cabeza"><h2>Panel de rendimiento</h2><span class="req">R11</span></div>
+      <p class="suave" style="margin:0 0 12px; max-width: 75ch">Se generan redes de tamaño creciente (cada una el doble de la anterior), se corre cada operación
         muchas veces y se compara el tiempo medido con la curva que esperábamos. Tarda alrededor de un minuto.</p>
       <div class="fila">
-        <label>Tamaños (n = estaciones)<input id="m-tamanos" value="1000,2000,4000,8000"></label>
+        <label for="m-tamanos">Tamaños (n = estaciones)<input id="m-tamanos" value="1000,2000,4000,8000"></label>
         <button class="principal" id="m-boton" onclick="medirTodo()">Medir</button>
       </div>
-      <div id="m-resultado" style="margin-top:8px"></div>
+      <div id="m-resultado"></div>
     </div>
   </section>
 
   <!-- ===================== Tabla de datos ===================== -->
   <section id="datos">
-    <div class="tarjeta">
-      <h2>Tabla de datos</h2>
-      <p class="suave" style="margin-top:0">Lo que el motor tiene cargado ahora mismo (incluye los cambios que hagas en
-        "Operar la red"). Toca un encabezado para ordenar.</p>
+    <div class="bloque">
+      <div class="cabeza"><h2>Tabla de datos</h2></div>
+      <p class="suave" style="margin:0 0 12px">Lo que el motor tiene cargado ahora mismo, con los cambios que hagas en
+        «Operar la red». Toca un encabezado para ordenar.</p>
       <div class="segmentos" id="d-vistas">
         <button data-v="estaciones" class="activo">Estaciones</button>
         <button data-v="rutas">Rutas</button>
         <button data-v="horarios">Horarios</button>
       </div>
       <div class="fila" style="margin-top:12px">
-        <label>Buscar<input id="d-buscar" placeholder="Filtrar filas…" autocomplete="off"></label>
-        <label id="d-ruta-label" style="display:none">Ruta<select id="d-ruta"></select></label>
-        <button onclick="descargarCSV()">⬇ Descargar CSV</button>
+        <label for="d-buscar">Buscar<input id="d-buscar" placeholder="Filtrar filas…" autocomplete="off"></label>
+        <label for="d-ruta" id="d-ruta-label" style="display:none">Ruta<select id="d-ruta"></select></label>
+        <button id="d-descargar" onclick="descargarCSV()">Descargar CSV</button>
       </div>
-      <p class="suave" id="d-cuenta"></p>
+      <p class="suave" id="d-cuenta" style="margin:12px 0 0"></p>
       <div class="tabla-caja"><table id="d-tabla"></table></div>
       <div id="d-horas"></div>
     </div>
   </section>
 </main>
 
+<!--SCRIPTS-WEB-->
 <script>
 const $ = id => document.getElementById(id);
-const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const DIACRITICOS = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g");
 let ESTACIONES = [], RUTAS = [];
 
+// API-REMOTA-INICIO
 async function api(nombre, params = {}) {
   const r = await fetch("/api/" + nombre + "?" + new URLSearchParams(params));
   const datos = await r.json();
   if (!r.ok) { $("global").innerHTML = `<div class="aviso mal">Error: ${esc(datos.error)}</div>`; throw datos; }
   return datos;
 }
+// API-REMOTA-FIN
 const aviso = (ok, si, no) => `<div class="aviso ${ok ? "ok" : "mal"}">${esc(ok ? si : no)}</div>`;
 const opciones = (lista, elegido) => lista.map(x => `<option ${x === elegido ? "selected" : ""}>${esc(x)}</option>`).join("");
 let tempo = {}; const luego = (k, f) => { clearTimeout(tempo[k]); tempo[k] = setTimeout(f, 150); };
+
+// color de cada ruta según la letra de su zona (convención de esta app)
+const ZONAS = {A: "#1f5fae", B: "#2e7d32", C: "#d9730d", D: "#6a3fa0", E: "#b0175a", F: "#c8102e", G: "#0b8494",
+               H: "#a8550a", J: "#7a6233", K: "#4f6170", L: "#00796b", M: "#37474f"};
+const colorRuta = r => ZONAS[String(r).charAt(0).toUpperCase()] || "#2b2f33";
+const insignia = (r, mini) => `<span class="ruta${mini ? " mini" : ""}" style="--c:${colorRuta(r)}">${esc(r)}</span>`;
 
 // ---------- pestañas
 document.querySelectorAll("#pestanas button").forEach(b => b.onclick = () => {
@@ -273,56 +408,75 @@ async function refrescar() {
   $("v-destino").innerHTML = opciones(ESTACIONES, vd);
   $("p-estacion").innerHTML = opciones(ESTACIONES, $("p-estacion").value || "CALLE 26");
   $("c-abierta").innerHTML = opciones(ESTACIONES, $("c-abierta").value);
-  $("o-ruta").innerHTML = opciones(RUTAS, $("o-ruta").value || RUTAS[0]);
+  $("o-ruta").innerHTML = opciones(RUTAS, $("o-ruta").value || (RUTAS.includes("B74") ? "B74" : RUTAS[0]));
   buscar(); rango(); viaje(); rutasDe(); ranking(); recorrido();
 }
 
 // ---------- R1 + R2
 async function buscar() {
   const texto = $("b-texto").value.trim();
-  if (!texto) { $("b-estado").innerHTML = ""; $("b-sugerencias").innerHTML = ""; return; }
+  if (!texto) {
+    $("b-estado").innerHTML = `<p class="suave" style="margin:12px 0 0">Prueba con «calle», «portal» o «av».</p>`;
+    $("b-sugerencias").innerHTML = ""; return;
+  }
   const [e, sug] = await Promise.all([api("estado", {nombre: texto}), api("autocompletar", {prefijo: texto, k: $("b-k").value})]);
-  if (!e.existe) $("b-estado").innerHTML = `<div class="aviso mal">No hay una estación que se llame exactamente «${esc(e.nombre)}».</div>`;
-  else if (!e.abierta) $("b-estado").innerHTML = `<div class="aviso mal">⛔ ${esc(e.nombre)} existe pero está CERRADA.</div>`;
-  else $("b-estado").innerHTML = `<div class="aviso ok">✅ ${esc(e.nombre)} existe y está abierta · ${e.buses} buses al día<br>
-      <span class="suave">Rutas: ${esc(e.rutas.join(", ") || "ninguna")}</span></div>`;
+  if (!e.existe) $("b-estado").innerHTML = `<div class="aviso mal">No hay una estación que se llame exactamente «${esc(e.nombre)}». Mira las sugerencias.</div>`;
+  else $("b-estado").innerHTML = `<div class="letrero"><b>${esc(e.nombre)}</b>
+      <span class="estado ${e.abierta ? "abierta" : "cerrada"}">${e.abierta ? "Abierta" : "Cerrada"}</span>
+      <small>${e.buses.toLocaleString("es-CO")} buses al día · ${e.rutas.length} rutas</small>
+      <div class="rutas-letrero">${e.rutas.map(r => insignia(r, true)).join("")}</div></div>`;
   $("b-sugerencias").innerHTML = sug.length
-    ? sug.map(s => `<span class="chip" onclick="$('b-texto').value='${esc(s)}';buscar()">${esc(s)}</span>`).join("")
-    : `<span class="suave">Autocompletar: sin coincidencias</span>`;
+    ? sug.map(s => `<button class="chip" onclick="$('b-texto').value='${esc(s)}';buscar()">${esc(s)}</button>`).join("")
+    : `<span class="suave">Ninguna estación abierta empieza así.</span>`;
 }
 $("b-texto").oninput = () => luego("b", buscar); $("b-k").oninput = () => luego("b", buscar);
 
 // ---------- R3
 async function rango() {
   const lista = await api("rango", {desde: $("r-desde").value, hasta: $("r-hasta").value});
-  $("r-cuenta").textContent = `${lista.length} estaciones abiertas`;
+  $("r-cuenta").textContent = `${lista.length} estaciones abiertas, en orden alfabético`;
   $("r-lista").innerHTML = lista.map(x => `<li>${esc(x)}</li>`).join("");
 }
 $("r-desde").oninput = () => luego("r", rango); $("r-hasta").oninput = () => luego("r", rango);
 
-// ---------- R5
+// ---------- R5: el viaje se dibuja como un diagrama de línea
 async function viaje() {
   const plan = await api("viaje", {origen: $("v-origen").value, destino: $("v-destino").value});
-  if (plan === null) { $("v-plan").innerHTML = `<div class="aviso mal">No hay viaje directo ni con un solo transbordo.</div>`; return; }
-  if (plan.length === 0) { $("v-plan").innerHTML = `<div class="aviso ok">Ya estás ahí 🙂</div>`; return; }
+  if (plan === null) { $("v-plan").innerHTML = `<div class="aviso mal">No hay viaje directo ni con un solo transbordo entre estas dos estaciones.</div>`; return; }
+  if (plan.length === 0) { $("v-plan").innerHTML = `<div class="aviso ok">Origen y destino son la misma estación.</div>`; return; }
   const total = plan.reduce((s, t) => s + t[3], 0);
-  $("v-plan").innerHTML = `<div class="aviso ok">${plan.length === 1 ? "Directo" : "Con 1 transbordo"} · ${total} paradas</div>` +
-    plan.map(([ruta, sube, baja, p]) => `<div class="tramo"><span class="ruta">${esc(ruta)}</span>
-      <div>Sube en <b>${esc(sube)}</b> y bájate en <b>${esc(baja)}</b><br><span class="suave">${p} paradas</span></div></div>`).join("");
+  let pasos = "";
+  plan.forEach(([ruta, sube, baja, p], i) => {
+    const c = colorRuta(ruta);
+    pasos += `<li class="parada${i > 0 ? " cambio" : ""}" style="--c:${c}"><span class="riel"></span><div class="txt"><b>${esc(sube)}</b>
+                <span>${i === 0 ? "Sube a la" : "Cambia a la"} ${insignia(ruta, true)}</span></div></li>
+              <li class="tramo" style="--c:${c}"><span class="riel"></span><div class="txt">${insignia(ruta, true)} ${p} parada${p === 1 ? "" : "s"}</div></li>`;
+    if (i === plan.length - 1) pasos += `<li class="parada" style="--c:${c}"><span class="riel"></span><div class="txt"><b>${esc(baja)}</b><span>Llegaste</span></div></li>`;
+  });
+  $("v-plan").innerHTML = `<div class="resumen-viaje"><b>${total} paradas</b>
+      <span class="suave">${plan.length === 1 ? "Viaje directo" : "Un transbordo en " + esc(plan[0][2])}</span></div>
+    <ol class="itinerario">${pasos}</ol>`;
 }
 $("v-origen").onchange = viaje; $("v-destino").onchange = viaje;
 
-// ---------- R4
+// ---------- R4: tablero LED
 async function rutasDe() {
   const rutas = await api("rutas_de", {estacion: $("p-estacion").value});
   $("p-ruta").innerHTML = opciones(rutas, $("p-ruta").value);
   proximo();
 }
 async function proximo() {
-  if (!$("p-ruta").value) { $("p-resultado").innerHTML = `<p class="suave">Ninguna ruta para aquí.</p>`; return; }
-  const h = await api("proximo_bus", {estacion: $("p-estacion").value, ruta: $("p-ruta").value, hora: $("p-hora").value});
-  $("p-resultado").innerHTML = `<p class="suave" style="margin:12px 0 0">Siguiente ${esc($("p-ruta").value)} en ${esc($("p-estacion").value)}</p>
-    <div class="grande">${esc(h || "sin servicio")}</div>`;
+  if (!$("p-ruta").value) { $("p-resultado").innerHTML = `<p class="suave" style="margin:12px 0 0">Ninguna ruta para aquí.</p>`; return; }
+  const ruta = $("p-ruta").value, consulta = $("p-hora").value;
+  const h = await api("proximo_bus", {estacion: $("p-estacion").value, ruta, hora: consulta});
+  let falta = "sin servicio en esta estación";
+  if (h) {
+    const m = t => parseInt(t.slice(0, 2), 10) * 60 + parseInt(t.slice(3, 5), 10);
+    const d = (m(h) - m(consulta) + 1440) % 1440;
+    falta = d === 0 ? "está llegando" : d < 60 ? `en ${d} min` : `en ${Math.floor(d / 60)} h ${d % 60} min`;
+  }
+  $("p-resultado").innerHTML = `<div class="tablero">${insignia(ruta)}<span class="destino">${esc($("p-estacion").value)}</span>
+      <span class="hora">${esc(h || "--:--")}</span><span class="falta">${falta}</span></div>`;
 }
 $("p-estacion").onchange = rutasDe; $("p-ruta").onchange = proximo; $("p-hora").oninput = proximo;
 
@@ -330,97 +484,97 @@ $("p-estacion").onchange = rutasDe; $("p-ruta").onchange = proximo; $("p-hora").
 async function ranking() {
   const top = await api("ranking", {k: $("k-rank").value});
   const max = top.length ? top[0].buses : 1;
-  $("ranking").innerHTML = top.map((e, i) => `<div class="barra"><span class="suave">${i + 1}</span><span>${esc(e.nombre)}</span>
-    <div class="fondo"><div class="lleno" style="width:${(100 * e.buses / max).toFixed(1)}%"></div></div><span>${e.buses}</span></div>`).join("");
+  $("ranking").innerHTML = top.map((e, i) => `<div class="barra-r"><span class="pos">${i + 1}</span><span class="nom">${esc(e.nombre)}</span>
+    <div class="fondo"><div class="lleno" style="width:${(100 * e.buses / max).toFixed(1)}%"></div></div>
+    <span class="n">${e.buses.toLocaleString("es-CO")}</span></div>`).join("");
 }
 $("k-rank").oninput = () => luego("k", ranking);
 
-// ---------- R7
+// ---------- R7: el recorrido se dibuja como una línea con sus paradas
 async function recorrido() {
-  const r = await api("recorrido", {ruta: $("o-ruta").value});
-  const ida = r.ida || [];
-  const pinta = l => `<div class="recorrido">${l.map(p => `<span class="p">${esc(p)}</span>`).join("<span>→</span>")}</div>`;
-  $("o-recorrido").innerHTML = `<p class="suave" style="margin:12px 0 0">En su sentido</p>${pinta(ida)}
-    <p class="suave" style="margin:0">Al revés</p>${pinta(r.al_reves || [])}`;
+  const ruta = $("o-ruta").value;
+  const r = await api("recorrido", {ruta});
+  const ida = r.ida || [], abiertas = new Set(ESTACIONES), c = colorRuta(ruta);
+  const pinta = l => `<div class="linea-caja"><div class="linea-h" style="--c:${c}">${l.map(p =>
+      `<span class="p${abiertas.has(p) ? "" : " cerrada"}">${esc(p)}</span>`).join("")}</div></div>`;
+  $("o-recorrido").innerHTML = `<p class="sentido" style="margin:16px 0 0">${insignia(ruta, true)} En su sentido · ${ida.length} paradas</p>${pinta(ida)}
+    <p class="sentido" style="margin:0">Al revés</p>${pinta(r.al_reves || [])}`;
   $("o-despues").innerHTML = `<option value="">(al inicio)</option>` + opciones(ida);
   $("o-quitar").innerHTML = opciones(ida);
 }
 $("o-ruta").onchange = () => { $("o-aviso").innerHTML = ""; recorrido(); };
 async function agregar() {
   const ok = await api("agregar_parada", {ruta: $("o-ruta").value, nueva: $("o-nueva").value, despues_de: $("o-despues").value});
-  $("o-aviso").innerHTML = aviso(ok, "Parada agregada", "No se pudo (¿ya está en la ruta o el nombre está vacío?)");
+  $("o-aviso").innerHTML = aviso(ok, "Parada agregada. Puedes deshacerlo arriba.", "No se pudo: la parada ya está en la ruta o el nombre está vacío.");
   if (ok) { $("o-nueva").value = ""; refrescar(); }
 }
 async function quitar() {
   const ok = await api("quitar_parada", {ruta: $("o-ruta").value, estacion: $("o-quitar").value});
-  $("o-aviso").innerHTML = aviso(ok, "Parada quitada", "No se pudo");
+  $("o-aviso").innerHTML = aviso(ok, "Parada quitada. Puedes deshacerlo arriba.", "No se pudo quitar.");
   if (ok) refrescar();
 }
 
 // ---------- R8
 async function cerrar() {
   const n = $("c-abierta").value, ok = await api("cerrar", {nombre: n});
-  $("c-aviso").innerHTML = aviso(ok, n + " cerrada", "No se pudo");
+  $("c-aviso").innerHTML = aviso(ok, n + " quedó cerrada: ya no aparece en búsquedas, rangos, ranking ni viajes.", "No se pudo cerrar.");
   if (ok) { $("c-cerrada").value = n; refrescar(); }
 }
 async function reabrir() {
   const n = $("c-cerrada").value, ok = await api("reabrir", {nombre: n});
-  $("c-aviso").innerHTML = aviso(ok, n + " reabierta", "No estaba cerrada (o no existe)");
+  $("c-aviso").innerHTML = aviso(ok, n + " está abierta otra vez.", "Esa estación no estaba cerrada o no existe.");
   if (ok) refrescar();
 }
 
 // ---------- R9
 async function cambio(tipo) {
   const ok = await api(tipo);
-  $("global").innerHTML = aviso(ok, tipo === "deshacer" ? "Cambio deshecho" : "Cambio rehecho",
-                                tipo === "deshacer" ? "No hay nada que deshacer" : "No hay nada que rehacer");
+  $("global").innerHTML = aviso(ok, tipo === "deshacer" ? "Cambio deshecho." : "Cambio rehecho.",
+                                tipo === "deshacer" ? "No hay nada que deshacer." : "No hay nada que rehacer.");
   setTimeout(() => $("global").innerHTML = "", 2500);
   refrescar();
 }
 
 // ---------- R10
 async function simular() {
-  $("f-boton").disabled = true; $("f-resultado").innerHTML = `<p class="suave">Simulando…</p>`;
+  $("f-boton").disabled = true; $("f-resultado").innerHTML = `<p class="suave" style="margin:14px 0 0">Simulando…</p>`;
   try {
     const r = await api("fila", {pasajeros: $("f-pasajeros").value, ventana: $("f-ventana").value,
                                  frecuencia: $("f-frecuencia").value, capacidad: $("f-capacidad").value});
     $("f-resultado").innerHTML = `<div class="metricas">
-        <div class="metrica"><span class="suave">Espera promedio</span><b>${r.promedio.toFixed(1)} min</b></div>
-        <div class="metrica"><span class="suave">Espera máxima</span><b>${r.maxima.toFixed(1)} min</b></div>
-        <div class="metrica"><span class="suave">Buses necesarios</span><b>${r.buses}</b></div></div>
-      <p class="suave" style="margin-top:16px">Espera promedio según el minuto en que llegó la persona</p>
-      ${grafica([{puntos: r.curva, color: "var(--rojo)"}], "minuto", "min")}`;
+        <div class="metrica"><span>Espera promedio</span><b>${r.promedio.toFixed(1)} min</b></div>
+        <div class="metrica"><span>Espera máxima</span><b>${r.maxima.toFixed(1)} min</b></div>
+        <div class="metrica"><span>Buses necesarios</span><b>${r.buses.toLocaleString("es-CO")}</b></div></div>
+      <p class="suave" style="margin:18px 0 4px">Espera promedio según el minuto en que llegó la persona</p>
+      ${grafica([{puntos: r.curva, color: "var(--rojo)", area: true}], "minuto de llegada", "min", 920, 260)}`;
   } finally { $("f-boton").disabled = false; }
 }
 
 // ---------- R11
 async function medirTodo() {
   $("m-boton").disabled = true;
-  $("m-resultado").innerHTML = `<p class="suave">Midiendo… (generando redes y corriendo cada operación)</p>`;
+  $("m-resultado").innerHTML = `<p class="suave" style="margin:14px 0 0">Midiendo… generando redes y corriendo cada operación.</p>`;
   try {
     const ops = await api("medir", {tamanos: $("m-tamanos").value});
-    $("m-resultado").innerHTML = ops.map(op => {
+    $("m-resultado").innerHTML = `<div class="graficas">` + ops.map(op => {
       // el mismo método del profe: comparar la última duplicación (n -> 2n)
       const p = op.puntos, ant = p[p.length - 2], ult = p[p.length - 1];
       const crecMed = ult[1] / ant[1], crecEsp = ult[2] / ant[2];
       const coincide = crecMed <= crecEsp * 1.35 + 0.25;
-      return `<div class="grafica"><div>
-          <b>${esc(op.operacion)}</b> <span class="suave">— esperado ${esc(op.complejidad)}</span>
+      const ver = op.operacion.startsWith("R5") ? `<span class="veredicto neutro">No se califica</span>`
+        : `<span class="veredicto ${coincide ? "si" : "no"}">${coincide ? "Coincide" : "Creció más de lo esperado"}</span>`;
+      return `<div class="grafica"><h3>${esc(op.operacion)}</h3><span class="esp">Esperado ${esc(op.complejidad)}</span>${ver}
           ${grafica([{puntos: p.map(x => [x[0], x[2]]), color: "var(--gris)", punteada: true},
                      {puntos: p.map(x => [x[0], x[1]]), color: "var(--azul)"}], "n", "µs")}
-          <div class="leyenda"><span><i style="background:var(--azul)"></i>medido</span>
-            <span><i style="background:var(--gris)"></i>esperado</span></div></div>
-        <div><p class="suave" style="margin-top:0">De n = ${ant[0]} a n = ${ult[0]}: el tiempo medido creció ×${crecMed.toFixed(2)} · se esperaba ×${crecEsp.toFixed(2)}</p>
-          ${op.operacion.startsWith("R5") ? `<div class="aviso ok" style="background:var(--bg);color:var(--suave)">R5 no se mide en la calificación</div>`
-            : aviso(coincide, "Coincide con lo esperado", "Creció más de lo esperado")}
-          <p class="suave">${esc(op.explicacion)}</p></div></div>`;
-    }).join("");
+          <div class="leyenda"><span><i style="background:var(--azul)"></i>medido</span><span><i style="background:var(--gris)"></i>esperado</span></div>
+          <p class="suave" style="margin:0">De n = ${ant[0]} a n = ${ult[0]}: medido ×${crecMed.toFixed(2)}, esperado ×${crecEsp.toFixed(2)}. ${esc(op.explicacion)}</p></div>`;
+    }).join("") + `</div>`;
   } finally { $("m-boton").disabled = false; }
 }
 
 // ---------- gráfica de líneas en SVG, sin librerías
-function grafica(series, ejeX, ejeY) {
-  const W = 520, H = 210, iz = 52, de = 16, ar = 24, ab = 28;
+function grafica(series, ejeX, ejeY, W = 520, H = 200) {
+  const iz = 48, de = 14, ar = 22, ab = 30;
   const todos = series.flatMap(s => s.puntos);
   if (!todos.length) return "";
   const xs = todos.map(p => p[0]), ys = todos.map(p => p[1]);
@@ -437,15 +591,16 @@ function grafica(series, ejeX, ejeY) {
   }
   const marcas = [...new Set(series[series.length - 1].puntos.map(p => p[0]))];
   const pasoM = Math.max(1, Math.ceil(marcas.length / 8));
-  marcas.forEach((m, i) => { if (i % pasoM === 0) g += `<text x="${X(m)}" y="${H - 8}" text-anchor="middle">${fmt(m)}</text>`; });
-  g += `<text x="${iz - 6}" y="12" text-anchor="end" style="font-weight:600">${esc(ejeY)}</text>
-        <text x="${W - de}" y="12" text-anchor="end" style="font-weight:600">eje x: ${esc(ejeX)}</text>`;
+  marcas.forEach((m, i) => { if (i % pasoM === 0) g += `<text x="${X(m)}" y="${H - 12}" text-anchor="middle">${fmt(m)}</text>`; });
+  g += `<text x="${iz - 6}" y="11" text-anchor="end" style="font-weight:600">${esc(ejeY)}</text>
+        <text x="${W - de}" y="${H - 1}" text-anchor="end" style="font-weight:600">${esc(ejeX)}</text>`;
   for (const s of series) {
     const d = s.puntos.map((p, i) => (i ? "L" : "M") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1)).join(" ");
-    g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.2" ${s.punteada ? 'stroke-dasharray="5 4"' : ""}/>`;
-    if (s.puntos.length <= 12) g += s.puntos.map(p => `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3" fill="${s.color}"/>`).join("");
+    if (s.area) g += `<path d="${d} L${X(s.puntos[s.puntos.length - 1][0]).toFixed(1)} ${Y(0)} L${X(s.puntos[0][0]).toFixed(1)} ${Y(0)} Z" fill="${s.color}" fill-opacity=".12"/>`;
+    g += `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.4" stroke-linejoin="round" ${s.punteada ? 'stroke-dasharray="5 4"' : ""}/>`;
+    if (s.puntos.length <= 12) g += s.puntos.map(p => `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="3.2" fill="${s.color}"/>`).join("");
   }
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">${g}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gráfica de ${esc(ejeY)} contra ${esc(ejeX)}">${g}</svg>`;
 }
 
 // ---------- Tabla de datos
@@ -469,7 +624,7 @@ $("d-ruta").onchange = () => { $("d-horas").innerHTML = ""; cargarDatos(); };
 async function cargarDatos() {
   $("d-ruta-label").style.display = vista === "horarios" ? "" : "none";
   if (vista === "horarios") {
-    if (!$("d-ruta").options.length) $("d-ruta").innerHTML = opciones(RUTAS, RUTAS[0]);
+    if (!$("d-ruta").options.length) $("d-ruta").innerHTML = opciones(RUTAS, RUTAS.includes("B74") ? "B74" : RUTAS[0]);
     filasDatos = await api("tabla_horarios", {ruta: $("d-ruta").value});
   } else {
     filasDatos = await api("tabla_" + vista);
@@ -478,7 +633,7 @@ async function cargarDatos() {
 }
 
 function filasVisibles() {
-  const q = $("d-buscar").value.trim().toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const q = $("d-buscar").value.trim().toUpperCase().normalize("NFD").replace(DIACRITICOS, "");
   let filas = q ? filasDatos.filter(f => COLUMNAS[vista].some(([k]) => String(f[k]).toUpperCase().includes(q))) : filasDatos.slice();
   if (orden.col) {
     filas.sort((a, b) => {
@@ -495,31 +650,34 @@ function pintarTabla() {
   $("d-cuenta").textContent = `${filas.length} de ${filasDatos.length} filas` +
     (vista === "horarios" ? " · toca una estación para ver todas sus horas" : "");
   const flecha = k => orden.col === k ? (orden.asc ? " ▲" : " ▼") : "";
+  const celda = (k, v) => k === "ruta" ? insignia(v, true) : esc(v);
   $("d-tabla").innerHTML =
     `<thead><tr>${cols.map(([k, t, c]) => `<th class="${c || ""}" data-k="${k}">${esc(t)}${flecha(k)}</th>`).join("")}</tr></thead>
-     <tbody>${filas.map((f, i) => `<tr ${vista === "horarios" ? `class="clic" data-i="${filasDatos.indexOf(f)}"` : ""}>` +
-       cols.map(([k, t, c]) => `<td class="${c || ""} ${f[k] === "Cerrada" ? "cerrada" : ""}">${esc(f[k])}</td>`).join("") + `</tr>`).join("")}</tbody>`;
+     <tbody>${filas.map(f => `<tr ${vista === "horarios" ? `class="clic" data-i="${filasDatos.indexOf(f)}"` : ""}>` +
+       cols.map(([k, t, c]) => `<td class="${c || ""} ${f[k] === "Cerrada" ? "cerrada" : ""}">${celda(k, f[k])}</td>`).join("") + `</tr>`).join("")}</tbody>`;
   $("d-tabla").querySelectorAll("th").forEach(th => th.onclick = () => {
     orden = {col: th.dataset.k, asc: orden.col === th.dataset.k ? !orden.asc : true};
     pintarTabla();
   });
   $("d-tabla").querySelectorAll("tr.clic").forEach(tr => tr.onclick = () => {
     const f = filasDatos[+tr.dataset.i];
-    $("d-horas").innerHTML = `<p style="margin:14px 0 4px"><b>${esc($("d-ruta").value)}</b> en <b>${esc(f.estacion)}</b>
+    $("d-horas").innerHTML = `<p style="margin:16px 0 6px">${insignia($("d-ruta").value, true)} en <b>${esc(f.estacion)}</b>
       <span class="suave">· ${f.horas.length} pasadas</span></p>
-      <div class="chips">${f.horas.map(h => `<span class="chip">${h}</span>`).join("") || '<span class="suave">Sin horarios</span>'}</div>`;
+      <div class="sugerencias">${f.horas.map(h => `<span class="chip">${h}</span>`).join("") || '<span class="suave">Sin horarios</span>'}</div>`;
   });
 }
 
+// DESCARGA-INICIO
 function descargarCSV() {
   const cols = COLUMNAS[vista], filas = filasVisibles();
   const celda = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
   const texto = [cols.map(c => c[1]).join(","), ...filas.map(f => cols.map(([k]) => celda(f[k])).join(","))].join("\n");
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["﻿" + texto], {type: "text/csv;charset=utf-8"}));
+  a.href = URL.createObjectURL(new Blob([String.fromCharCode(0xfeff) + texto], {type: "text/csv;charset=utf-8"}));
   a.download = vista + (vista === "horarios" ? "_" + $("d-ruta").value : "") + ".csv";
   a.click();
 }
+// DESCARGA-FIN
 
 // la tabla se recarga sola cuando se abre la pestaña o cambia la red
 document.querySelector('nav button[data-p="datos"]').addEventListener("click", cargarDatos);
@@ -528,5 +686,6 @@ refrescar = async () => { await refrescarOriginal(); if ($("datos").classList.co
 
 refrescar();
 </script>
+<!--INICIO-PIE-->
 </body>
 </html>
