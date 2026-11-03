@@ -61,12 +61,13 @@
   main { max-width: 1040px; margin: 0 auto; padding-block: 22px 64px; }
   section { display: none; } section.activa { display: block; }
   .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; align-items: start; }
-  .bloque { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 18px 20px 20px; min-width: 0; }
+  .bloque { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 20px 22px 22px; min-width: 0;
+           box-shadow: 0 1px 2px rgba(20, 24, 27, .04), 0 8px 24px rgba(20, 24, 27, .05); }
   .bloque + .bloque, .rejilla + .bloque, .bloque + .rejilla { margin-top: 16px; }
   .rejilla > .bloque { margin-top: 0; }
   .cabeza { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
   h2 { margin: 0; font: 700 22px/1.1 var(--f-titulo); letter-spacing: .01em; text-wrap: balance; }
-  .req { font: 700 12px/1 var(--f-titulo); letter-spacing: .08em; color: var(--rojo); background: var(--rojo-suave);
+  .req { display: none; font: 700 12px/1 var(--f-titulo); letter-spacing: .08em; color: var(--rojo); background: var(--rojo-suave);
          padding: 4px 7px; border-radius: 4px; }
   .nota { font-size: 13px; color: var(--suave); margin: 0 0 16px; max-width: 75ch; }
 
@@ -74,23 +75,23 @@
   .fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
   .fila > label { flex: 1 1 170px; min-width: 0; }
   label { display: block; font: 600 12px/1.2 var(--f-texto); color: var(--suave); letter-spacing: .02em; }
-  input, select { width: 100%; margin-top: 6px; padding: 10px 12px; font: 500 15px var(--f-texto); color: var(--texto);
-                  background: var(--bg); border: 1px solid var(--borde); border-radius: 6px; min-width: 0; }
+  input, select { width: 100%; margin-top: 6px; padding: 11px 14px; min-height: 46px; font: 500 16px var(--f-texto); color: var(--texto);
+                  background: var(--bg); border: 1px solid var(--borde); border-radius: 12px; min-width: 0; }
   input:focus, select:focus { border-color: var(--linea); }
   .buscador { font: 700 26px/1.1 var(--f-titulo); letter-spacing: .02em; text-transform: uppercase; padding: 12px 14px; }
-  button { font: 600 15px var(--f-texto); padding: 10px 14px; border-radius: 6px; border: 1px solid var(--borde);
+  button { font: 600 15px var(--f-texto); padding: 11px 16px; min-height: 46px; border-radius: 12px; border: 1px solid var(--borde);
            background: var(--panel); color: var(--texto); cursor: pointer; }
   button:hover { border-color: var(--linea); }
   button.principal { background: var(--rojo); border-color: var(--rojo); color: var(--sobre-rojo); }
   button:disabled { opacity: .55; cursor: progress; }
   button:focus-visible, input:focus-visible, select:focus-visible, nav button:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
   .suave { color: var(--suave); font-size: 14px; }
-  .aviso { padding: 10px 12px; border-radius: 6px; margin-top: 12px; font-size: 15px; }
+  .aviso { padding: 12px 14px; border-radius: 12px; margin-top: 12px; font-size: 15px; }
   .ok { background: var(--verde-suave); color: var(--verde); }
   .mal { background: var(--ambar-suave); color: var(--ambar); }
 
   /* ---------- letrero de estación */
-  .letrero { margin-top: 14px; background: var(--letrero); color: var(--sobre-letrero); border-radius: 8px; padding: 14px 16px;
+  .letrero { margin-top: 14px; background: var(--letrero); color: var(--sobre-letrero); border-radius: 14px; padding: 14px 16px;
              display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
   .letrero b { font: 800 30px/1.05 var(--f-titulo); letter-spacing: .02em; text-transform: uppercase; overflow-wrap: anywhere; }
   .letrero small { grid-column: 1 / -1; opacity: .75; font-size: 13px; }
@@ -99,7 +100,7 @@
   .estado.cerrada { background: var(--ambar); color: #fff; }
   .rutas-letrero { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
   .sugerencias { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-  .chip { padding: 5px 10px; border-radius: 5px; background: var(--bg); border: 1px solid var(--borde);
+  .chip { padding: 7px 12px; min-height: 0; border-radius: 999px; background: var(--bg); border: 1px solid var(--borde);
           font: 700 14px/1.2 var(--f-titulo); letter-spacing: .03em; cursor: pointer; color: var(--texto); }
   .chip:hover { border-color: var(--linea); }
   .lista { columns: 3 160px; column-gap: 20px; margin: 10px 0 0; padding: 0; list-style: none; }
@@ -126,7 +127,7 @@
   .tramo .txt { padding: 8px 0 14px; font-size: 14px; color: var(--suave); display: flex; gap: 8px; align-items: center; }
 
   /* ---------- tablero LED */
-  .tablero { margin-top: 14px; background: var(--tablero); border-radius: 8px; padding: 14px 18px; color: var(--led);
+  .tablero { margin-top: 14px; background: var(--tablero); border-radius: 14px; padding: 14px 18px; color: var(--led);
              display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; }
   .tablero .destino { font: 700 16px/1.2 var(--f-titulo); letter-spacing: .06em; text-transform: uppercase; color: #e9e3d2; overflow-wrap: anywhere; }
   .tablero .hora { font: 800 44px/1 var(--f-titulo); letter-spacing: .04em; text-shadow: 0 0 12px rgba(255, 178, 30, .35); }
@@ -188,8 +189,28 @@
   tbody tr:hover { background: var(--bg); }
   tr.clic { cursor: pointer; }
   .cerrada { color: var(--ambar); font-weight: 600; }
+  body.tecnico .req { display: inline-block; }
+  .tec { display: none; } body.tecnico .tec { display: block; }
+  .ayuda { margin: -6px 0 14px; color: var(--suave); font-size: 15px; max-width: 70ch; }
+  .ida-vuelta { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: end; }
+  .ida-vuelta button.invertir { width: 46px; padding: 0; font-size: 20px; border-radius: 50%; }
+  .con-boton { display: flex; gap: 8px; align-items: end; } .con-boton label { flex: 1; } .con-boton button { flex: 0 0 auto; }
+  .hint { margin: 10px 0 0; color: var(--ambar); font-size: 14px; }
+  .interruptor { display: flex; align-items: center; gap: 8px; font: 600 13px var(--f-texto); color: var(--suave); cursor: pointer;
+                 background: none; border: 1px solid var(--borde); border-radius: 999px; padding: 6px 12px; min-height: 0; }
+  .interruptor i { width: 30px; height: 18px; border-radius: 999px; background: var(--linea); position: relative; transition: background .15s; }
+  .interruptor i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
+  body.tecnico .interruptor i { background: var(--rojo); } body.tecnico .interruptor i::after { left: 14px; }
+  .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px);
+           background: var(--letrero); color: var(--sobre-letrero); padding: 12px 18px; border-radius: 999px; font-weight: 600;
+           box-shadow: 0 10px 30px rgba(0, 0, 0, .25); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 20;
+           max-width: calc(100% - 32px); }
+  .toast.ver { opacity: 1; transform: translate(-50%, 0); }
+  @media (prefers-reduced-motion: reduce) { .toast, .interruptor i, .interruptor i::after { transition: none; } }
   /*CSS-WEB*/
   @media (max-width: 560px) {
+    .ida-vuelta { grid-template-columns: minmax(0, 1fr) auto; } .ida-vuelta label:last-of-type { grid-column: 1 / -1; }
+    .ida-vuelta button.invertir { grid-row: 1; grid-column: 2; }
     .info { border-left: 0; padding-left: 0; order: 3; width: 100%; }
     .acciones button span { display: none; }
     .letrero b { font-size: 26px; }
@@ -211,37 +232,42 @@
   </div>
   <span class="info" id="info">Cargando la red…</span>
   <div class="acciones">
+    <button class="interruptor" id="b-tecnico" onclick="alternarTecnico()" aria-pressed="false" title="Muestra los números de requisito y los datos técnicos"><i></i>Modo sustentación</button>
     <button onclick="cambio('deshacer')" title="Deshacer el último cambio">↶ <span>Deshacer</span></button>
     <button onclick="cambio('rehacer')" title="Rehacer">↷ <span>Rehacer</span></button>
   </div>
 </div></header>
 <nav id="pestanas"><div class="nav-in gutter">
-  <button data-p="buscar" class="activo">Estaciones</button>
-  <button data-p="viajar">Viajar</button>
+  <button data-p="viajar" class="activo">Viajar</button>
+  <button data-p="buscar">Estaciones</button>
   <button data-p="operar">Operar la red</button>
-  <button data-p="fila">Fila de abordaje</button>
+  <button data-p="fila">Hora pico</button>
   <button data-p="panel">Rendimiento</button>
   <button data-p="datos">Datos</button>
 </div></nav>
 <main class="gutter">
   <!--NOTA-WEB-->
   <div id="global"></div>
+  <datalist id="lista-estaciones"></datalist>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <!-- ===================== R1 R2 R3 ===================== -->
-  <section id="buscar" class="activa">
+  <section id="buscar">
     <div class="rejilla">
       <div class="bloque">
         <div class="cabeza"><h2>Buscar una estación</h2><span class="req">R1 · R2</span></div>
-        <label for="b-texto">Escribe el nombre</label>
-        <input id="b-texto" class="buscador" placeholder="Calle 26" autocomplete="off">
+        <p class="ayuda">Escribe aunque sea el comienzo del nombre: te decimos si existe, si está abierta y qué rutas paran ahí.</p>
+        <label for="b-texto">Nombre de la estación</label>
+        <input id="b-texto" class="buscador" placeholder="Ej: calle 26" autocomplete="off">
         <div class="fila" style="margin-top:10px">
-          <label for="b-k" style="flex:0 0 150px">Sugerencias (k)<input id="b-k" type="number" value="8" min="1" max="30"></label>
+          <label for="b-k" style="flex:0 0 190px">Mostrar hasta<select id="b-k"><option>5</option><option selected>8</option><option>12</option><option>20</option></select></label>
         </div>
         <div id="b-estado"></div>
         <div class="sugerencias" id="b-sugerencias"></div>
       </div>
       <div class="bloque">
-        <div class="cabeza"><h2>Listar un rango</h2><span class="req">R3</span></div>
+        <div class="cabeza"><h2>Estaciones entre dos nombres</h2><span class="req">R3</span></div>
+        <p class="ayuda">Como un índice alfabético: todas las estaciones abiertas que quedan entre los dos nombres.</p>
         <div class="fila">
           <label for="r-desde">Desde<input id="r-desde" value="CALLE 26"></label>
           <label for="r-hasta">Hasta<input id="r-hasta" value="CALLE 80"></label>
@@ -253,12 +279,14 @@
   </section>
 
   <!-- ===================== R4 R5 R6 ===================== -->
-  <section id="viajar">
+  <section id="viajar" class="activa">
     <div class="bloque">
-      <div class="cabeza"><h2>Planear un viaje</h2><span class="req">R5</span></div>
-      <div class="fila">
-        <label for="v-origen">Origen<select id="v-origen"></select></label>
-        <label for="v-destino">Destino<select id="v-destino"></select></label>
+      <div class="cabeza"><h2>¿A dónde vas?</h2><span class="req">R5</span></div>
+      <p class="ayuda">Escribe de dónde sales y a dónde vas. Te mostramos la ruta con menos paradas, directa o con un solo cambio de bus.</p>
+      <div class="ida-vuelta">
+        <label for="v-origen">Salgo de<input id="v-origen" list="lista-estaciones" autocomplete="off" placeholder="Ej: Portal Norte"></label>
+        <button class="invertir" onclick="invertirViaje()" title="Intercambiar origen y destino" aria-label="Intercambiar origen y destino">⇄</button>
+        <label for="v-destino">Voy a<input id="v-destino" list="lista-estaciones" autocomplete="off" placeholder="Ej: Portal Sur"></label>
       </div>
       <div id="v-plan"></div>
       <!--REGISTRO-WEB-->
@@ -267,15 +295,17 @@
       <div class="bloque">
         <div class="cabeza"><h2>Próximo bus</h2><span class="req">R4</span></div>
         <div class="fila">
-          <label for="p-estacion">Estación<select id="p-estacion"></select></label>
-          <label for="p-ruta" style="flex:0 1 120px">Ruta<select id="p-ruta"></select></label>
-          <label for="p-hora" style="flex:0 1 130px">Hora<input id="p-hora" type="time" value="07:00"></label>
+          <label for="p-estacion">Estoy en<input id="p-estacion" list="lista-estaciones" autocomplete="off" placeholder="Ej: Calle 26"></label>
+          <label for="p-ruta" style="flex:0 1 120px">Espero la<select id="p-ruta"></select></label>
+          <div class="con-boton" style="flex:0 1 200px"><label for="p-hora">A las<input id="p-hora" type="time" value="07:00"></label>
+            <button onclick="horaActual()" title="Usar la hora de ahora">Ahora</button></div>
         </div>
         <div id="p-resultado"></div>
       </div>
       <div class="bloque">
         <div class="cabeza"><h2>Las más concurridas</h2><span class="req">R6</span></div>
-        <div class="fila"><label for="k-rank" style="flex:0 0 150px">¿Cuántas? (k)<input id="k-rank" type="number" value="10" min="1" max="50"></label></div>
+        <p class="ayuda">Las estaciones por donde pasan más buses en un día hábil.</p>
+        <div class="fila"><label for="k-rank" style="flex:0 0 170px">Mostrar<select id="k-rank"><option>5</option><option selected>10</option><option>20</option></select></label></div>
         <div id="ranking" class="ranking" style="margin-top:12px"></div>
       </div>
     </div>
@@ -285,6 +315,7 @@
   <section id="operar">
     <div class="bloque">
       <div class="cabeza"><h2>Editar rutas</h2><span class="req">R7 · R9</span></div>
+      <p class="ayuda">Para operadores: agrega o quita paradas de una ruta. Si te equivocas, toca Deshacer arriba.</p>
       <label for="o-ruta" style="max-width:260px">Ruta<select id="o-ruta"></select></label>
       <div id="o-recorrido"></div>
       <div class="fila">
@@ -301,7 +332,7 @@
     <div class="bloque">
       <div class="cabeza"><h2>Cerrar y reabrir estaciones</h2><span class="req">R8 · R9</span></div>
       <div class="fila">
-        <label for="c-abierta">Estación abierta<select id="c-abierta"></select></label>
+        <label for="c-abierta">Estación para cerrar<input id="c-abierta" list="lista-estaciones" autocomplete="off" placeholder="Ej: Héroes"></label>
         <button onclick="cerrar()">Cerrar estación</button>
       </div>
       <div class="fila" style="margin-top:12px">
@@ -316,13 +347,14 @@
   <!-- ===================== R10 ===================== -->
   <section id="fila">
     <div class="bloque">
-      <div class="cabeza"><h2>Simular la hora pico</h2><span class="req">R10</span></div>
+      <div class="cabeza"><h2>¿Cuánto toca esperar en hora pico?</h2><span class="req">R10</span></div>
+      <p class="ayuda">Imagina una estación llena: la gente llega, hace fila y sube en orden cuando pasa el bus. Cambia los números y mira cómo crece la espera.</p>
       <div class="fila">
-        <label for="f-pasajeros">Pasajeros<input id="f-pasajeros" type="number" value="100000" min="1"></label>
+        <label for="f-pasajeros">Personas que llegan<input id="f-pasajeros" type="number" value="100000" min="1"></label>
         <label for="f-ventana">Llegan durante (min)<input id="f-ventana" type="number" value="120" min="1"></label>
         <label for="f-frecuencia">Un bus cada (min)<input id="f-frecuencia" type="number" value="0.25" step="0.05" min="0.05"></label>
         <label for="f-capacidad">Cupo por bus<input id="f-capacidad" type="number" value="250" min="1"></label>
-        <button class="principal" id="f-boton" onclick="simular()">Simular</button>
+        <button class="principal" id="f-boton" onclick="simular()">Ver la espera</button>
       </div>
       <div id="f-resultado"><p class="suave" style="margin:14px 0 0">Un biarticulado lleva unas 250 personas. Con un bus cada
         15 segundos y 100 000 pasajeros en dos horas, la fila crece en el pico y se vacía al final.</p></div>
@@ -385,6 +417,38 @@ const aviso = (ok, si, no) => `<div class="aviso ${ok ? "ok" : "mal"}">${esc(ok 
 const opciones = (lista, elegido) => lista.map(x => `<option ${x === elegido ? "selected" : ""}>${esc(x)}</option>`).join("");
 let tempo = {}; const luego = (k, f) => { clearTimeout(tempo[k]); tempo[k] = setTimeout(f, 150); };
 
+// lo que la persona escribe -> nombre exacto de una estación (sin importar tildes ni mayúsculas)
+const normal = t => String(t || "").normalize("NFD").replace(DIACRITICOS, "").toUpperCase().split(/\s+/).filter(Boolean).join(" ");
+function est(id) {
+  const v = normal($(id).value);
+  if (!v) return null;
+  for (const e of ESTACIONES) if (e === v) return e;
+  return null;
+}
+// aviso flotante que se va solo
+let tToast = null;
+function avisar(texto) {
+  const t = $("toast"); t.textContent = texto; t.classList.add("ver");
+  clearTimeout(tToast); tToast = setTimeout(() => t.classList.remove("ver"), 2600);
+}
+// modo sustentación: muestra los números de requisito (R1…R11)
+function alternarTecnico(forzar) {
+  const on = typeof forzar === "boolean" ? forzar : !document.body.classList.contains("tecnico");
+  document.body.classList.toggle("tecnico", on);
+  $("b-tecnico").setAttribute("aria-pressed", String(on));
+  try { localStorage.setItem("planeador-tecnico", on ? "1" : "0"); } catch (e) {}
+}
+try { if (localStorage.getItem("planeador-tecnico") === "1") alternarTecnico(true); } catch (e) {}
+function horaActual() {
+  const d = new Date();
+  $("p-hora").value = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  proximo();
+}
+function invertirViaje() {
+  const a = $("v-origen").value; $("v-origen").value = $("v-destino").value; $("v-destino").value = a;
+  viaje();
+}
+
 // color de cada ruta según la letra de su zona (convención de esta app)
 const ZONAS = {A: "#1f5fae", B: "#2e7d32", C: "#d9730d", D: "#6a3fa0", E: "#b0175a", F: "#c8102e", G: "#0b8494",
                H: "#a8550a", J: "#7a6233", K: "#4f6170", L: "#00796b", M: "#37474f"};
@@ -402,12 +466,10 @@ async function refrescar() {
   const info = await api("info");
   ESTACIONES = info.abiertas; RUTAS = info.rutas;
   $("info").textContent = `${info.estaciones} estaciones · ${info.rutas.length} rutas`;
-  const vo = $("v-origen").value || (ESTACIONES.includes("PORTAL NORTE") ? "PORTAL NORTE" : ESTACIONES[0]);
-  const vd = $("v-destino").value || (ESTACIONES.includes("PORTAL SUR") ? "PORTAL SUR" : ESTACIONES[ESTACIONES.length - 1]);
-  $("v-origen").innerHTML = opciones(ESTACIONES, vo);
-  $("v-destino").innerHTML = opciones(ESTACIONES, vd);
-  $("p-estacion").innerHTML = opciones(ESTACIONES, $("p-estacion").value || "CALLE 26");
-  $("c-abierta").innerHTML = opciones(ESTACIONES, $("c-abierta").value);
+  $("lista-estaciones").innerHTML = ESTACIONES.map(e => `<option value="${esc(e)}"></option>`).join("");
+  if (!$("v-origen").value) $("v-origen").value = ESTACIONES.includes("PORTAL NORTE") ? "PORTAL NORTE" : ESTACIONES[0];
+  if (!$("v-destino").value) $("v-destino").value = ESTACIONES.includes("PORTAL SUR") ? "PORTAL SUR" : ESTACIONES[ESTACIONES.length - 1];
+  if (!$("p-estacion").value) $("p-estacion").value = ESTACIONES.includes("CALLE 26") ? "CALLE 26" : ESTACIONES[0];
   $("o-ruta").innerHTML = opciones(RUTAS, $("o-ruta").value || (RUTAS.includes("B74") ? "B74" : RUTAS[0]));
   buscar(); rango(); viaje(); rutasDe(); ranking(); recorrido();
 }
@@ -420,14 +482,16 @@ async function buscar() {
     $("b-sugerencias").innerHTML = ""; return;
   }
   const [e, sug] = await Promise.all([api("estado", {nombre: texto}), api("autocompletar", {prefijo: texto, k: $("b-k").value})]);
-  if (!e.existe) $("b-estado").innerHTML = `<div class="aviso mal">No hay una estación que se llame exactamente «${esc(e.nombre)}». Mira las sugerencias.</div>`;
+  if (!e.existe) $("b-estado").innerHTML = sug.length
+      ? `<p class="suave" style="margin:14px 0 0">¿Cuál de estas? Toca una para ver su letrero.</p>`
+      : `<div class="aviso mal">No encontramos ninguna estación que empiece por «${esc(e.nombre)}». Revisa cómo se escribe.</div>`;
   else $("b-estado").innerHTML = `<div class="letrero"><b>${esc(e.nombre)}</b>
       <span class="estado ${e.abierta ? "abierta" : "cerrada"}">${e.abierta ? "Abierta" : "Cerrada"}</span>
       <small>${e.buses.toLocaleString("es-CO")} buses al día · ${e.rutas.length} rutas</small>
       <div class="rutas-letrero">${e.rutas.map(r => insignia(r, true)).join("")}</div></div>`;
   $("b-sugerencias").innerHTML = sug.length
     ? sug.map(s => `<button class="chip" onclick="$('b-texto').value='${esc(s)}';buscar()">${esc(s)}</button>`).join("")
-    : `<span class="suave">Ninguna estación abierta empieza así.</span>`;
+    : "";
 }
 $("b-texto").oninput = () => luego("b", buscar); $("b-k").oninput = () => luego("b", buscar);
 
@@ -441,7 +505,12 @@ $("r-desde").oninput = () => luego("r", rango); $("r-hasta").oninput = () => lue
 
 // ---------- R5: el viaje se dibuja como un diagrama de línea
 async function viaje() {
-  const plan = await api("viaje", {origen: $("v-origen").value, destino: $("v-destino").value});
+  const o = est("v-origen"), d = est("v-destino");
+  if (!o || !d) {
+    $("v-plan").innerHTML = `<p class="hint">${!o ? "Elige de dónde sales" : "Elige a dónde vas"}: empieza a escribir y toca una estación de la lista.</p>`;
+    return;
+  }
+  const plan = await api("viaje", {origen: o, destino: d});
   if (plan === null) { $("v-plan").innerHTML = `<div class="aviso mal">No hay viaje directo ni con un solo transbordo entre estas dos estaciones.</div>`; return; }
   if (plan.length === 0) { $("v-plan").innerHTML = `<div class="aviso ok">Origen y destino son la misma estación.</div>`; return; }
   const total = plan.reduce((s, t) => s + t[3], 0);
@@ -457,28 +526,32 @@ async function viaje() {
       <span class="suave">${plan.length === 1 ? "Viaje directo" : "Un transbordo en " + esc(plan[0][2])}</span></div>
     <ol class="itinerario">${pasos}</ol>`;
 }
-$("v-origen").onchange = viaje; $("v-destino").onchange = viaje;
+$("v-origen").oninput = () => luego("v", viaje); $("v-destino").oninput = () => luego("v", viaje);
 
 // ---------- R4: tablero LED
 async function rutasDe() {
-  const rutas = await api("rutas_de", {estacion: $("p-estacion").value});
+  const e = est("p-estacion");
+  if (!e) { $("p-ruta").innerHTML = ""; $("p-resultado").innerHTML = `<p class="hint">Escribe tu estación y tócala en la lista.</p>`; return; }
+  const rutas = await api("rutas_de", {estacion: e});
   $("p-ruta").innerHTML = opciones(rutas, $("p-ruta").value);
   proximo();
 }
 async function proximo() {
+  const e = est("p-estacion");
+  if (!e) return;
   if (!$("p-ruta").value) { $("p-resultado").innerHTML = `<p class="suave" style="margin:12px 0 0">Ninguna ruta para aquí.</p>`; return; }
   const ruta = $("p-ruta").value, consulta = $("p-hora").value;
-  const h = await api("proximo_bus", {estacion: $("p-estacion").value, ruta, hora: consulta});
+  const h = await api("proximo_bus", {estacion: e, ruta, hora: consulta});
   let falta = "sin servicio en esta estación";
   if (h) {
     const m = t => parseInt(t.slice(0, 2), 10) * 60 + parseInt(t.slice(3, 5), 10);
     const d = (m(h) - m(consulta) + 1440) % 1440;
     falta = d === 0 ? "está llegando" : d < 60 ? `en ${d} min` : `en ${Math.floor(d / 60)} h ${d % 60} min`;
   }
-  $("p-resultado").innerHTML = `<div class="tablero">${insignia(ruta)}<span class="destino">${esc($("p-estacion").value)}</span>
+  $("p-resultado").innerHTML = `<div class="tablero">${insignia(ruta)}<span class="destino">${esc(e)}</span>
       <span class="hora">${esc(h || "--:--")}</span><span class="falta">${falta}</span></div>`;
 }
-$("p-estacion").onchange = rutasDe; $("p-ruta").onchange = proximo; $("p-hora").oninput = proximo;
+$("p-estacion").oninput = () => luego("p", rutasDe); $("p-ruta").onchange = proximo; $("p-hora").oninput = proximo;
 
 // ---------- R6
 async function ranking() {
@@ -506,7 +579,7 @@ $("o-ruta").onchange = () => { $("o-aviso").innerHTML = ""; recorrido(); };
 async function agregar() {
   const ok = await api("agregar_parada", {ruta: $("o-ruta").value, nueva: $("o-nueva").value, despues_de: $("o-despues").value});
   $("o-aviso").innerHTML = aviso(ok, "Parada agregada. Puedes deshacerlo arriba.", "No se pudo: la parada ya está en la ruta o el nombre está vacío.");
-  if (ok) { $("o-nueva").value = ""; refrescar(); }
+  if (ok) { $("o-nueva").value = ""; avisar("Parada agregada"); refrescar(); }
 }
 async function quitar() {
   const ok = await api("quitar_parada", {ruta: $("o-ruta").value, estacion: $("o-quitar").value});
@@ -516,9 +589,11 @@ async function quitar() {
 
 // ---------- R8
 async function cerrar() {
-  const n = $("c-abierta").value, ok = await api("cerrar", {nombre: n});
+  const n = est("c-abierta");
+  if (!n) { $("c-aviso").innerHTML = `<p class="hint">Escribe una estación abierta y tócala en la lista.</p>`; return; }
+  const ok = await api("cerrar", {nombre: n});
   $("c-aviso").innerHTML = aviso(ok, n + " quedó cerrada: ya no aparece en búsquedas, rangos, ranking ni viajes.", "No se pudo cerrar.");
-  if (ok) { $("c-cerrada").value = n; refrescar(); }
+  if (ok) { $("c-cerrada").value = n; $("c-abierta").value = ""; avisar(n + " cerrada"); refrescar(); }
 }
 async function reabrir() {
   const n = $("c-cerrada").value, ok = await api("reabrir", {nombre: n});
@@ -529,9 +604,8 @@ async function reabrir() {
 // ---------- R9
 async function cambio(tipo) {
   const ok = await api(tipo);
-  $("global").innerHTML = aviso(ok, tipo === "deshacer" ? "Cambio deshecho." : "Cambio rehecho.",
-                                tipo === "deshacer" ? "No hay nada que deshacer." : "No hay nada que rehacer.");
-  setTimeout(() => $("global").innerHTML = "", 2500);
+  avisar(ok ? (tipo === "deshacer" ? "Listo, cambio deshecho" : "Listo, cambio rehecho")
+            : (tipo === "deshacer" ? "No hay nada que deshacer" : "No hay nada que rehacer"));
   refrescar();
 }
 
@@ -684,6 +758,7 @@ document.querySelector('nav button[data-p="datos"]').addEventListener("click", c
 const refrescarOriginal = refrescar;
 refrescar = async () => { await refrescarOriginal(); if ($("datos").classList.contains("activa")) cargarDatos(); };
 
+(() => { const d = new Date(); $("p-hora").value = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); })();
 refrescar();
 </script>
 <!--INICIO-PIE-->
