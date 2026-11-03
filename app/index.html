@@ -787,7 +787,8 @@ function tramosDelViaje() {
 
 function dibujarMapa() {
   const d = MAPA.datos; if (!d) return;
-  const {z} = MAPA, {vw, vh} = vistaMapa();
+  const {z} = MAPA, {vw, vh, r: caja} = vistaMapa();
+  const upp = vw / (caja.width || 600);                                // unidades del mapa por pixel de pantalla
   const svg = $("mapa-svg");
   svg.setAttribute("viewBox", `${(MAPA.cx - vw / 2).toFixed(1)} ${(MAPA.cy - vh / 2).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
   const P = MAPA.pos, s = 1 / Math.sqrt(z);                            // marcas un poco más finas al acercar
@@ -864,9 +865,11 @@ function dibujarMapa() {
            stroke-width="${(sel ? 3 : 1.8) * s}" ${e.abierta ? "" : `stroke-dasharray="${2 * s} ${1.5 * s}"`}><title>${esc(e.nombre)}</title></circle>`;
     const conNombre = portal || sel || extremos.has(e.nombre) || (enfoque && dest) || z >= 3;
     if (conNombre) {
-      const fs = (portal || extremos.has(e.nombre) ? 11.5 : 10) * s;
-      g += `<text class="m-nom${portal ? " portal" : ""}" x="${(x + r + 3 * s).toFixed(1)}" y="${(y + fs * 0.35).toFixed(1)}" font-size="${fs.toFixed(2)}"
-             stroke="var(--panel)" stroke-width="${3 * s}" paint-order="stroke">${esc(e.nombre)}</text>`;
+      // el nombre se mide en pixeles de pantalla: queda del mismo tamaño con cualquier zoom y en cualquier pantalla,
+      // así al acercar ocupa cada vez menos mapa
+      const t = upp, fs = (portal || extremos.has(e.nombre) ? 12.5 : 11) * t;
+      g += `<text class="m-nom${portal ? " portal" : ""}" x="${(x + r + 3 * t).toFixed(2)}" y="${(y + fs * 0.35).toFixed(2)}" style="font-size:${fs.toFixed(3)}px"
+             stroke="var(--panel)" stroke-width="${(3 * t).toFixed(3)}" paint-order="stroke">${esc(e.nombre)}</text>`;
     }
   }
   svg.innerHTML = g;
