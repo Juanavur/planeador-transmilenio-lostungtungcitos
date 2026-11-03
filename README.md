@@ -85,6 +85,7 @@ motor/                     ← todo lo que resuelve requisitos (solo list, str, 
   horas.py                 "HH:MM" <-> minutos
 app/                       ← el front (solo llama al motor)
   servidor.py              servidor web con solo librería estándar: traduce peticiones a llamadas del motor
+  fondo_mapa.jpg           fondo del mapa (© colaboradores de OpenStreetMap)
   index.html               la página: pestañas, tabla de datos, gráficas SVG y panel de rendimiento (R11)
   herramientas/            generador de redes sintéticas, medición, revisor de prohibidos
   pruebas/                 pruebas del motor con una red pequeña hecha a mano
@@ -240,6 +241,7 @@ Fuente: GTFS estático de TransMilenio del 14 de julio de 2021 ([datos abiertos 
 5. **Cada ruta va en un solo sentido.** En TransMilenio cada `route_id` ya va en un sentido (B74 va al norte y J74 al sur). El orden de paradas es el patrón más frecuente entre sus viajes; si hay empate, el más largo. Una estación repetida dentro de la ruta se deja solo la primera vez.
 6. **Horas como 25:10.** Se pasan a la hora real del reloj con módulo 24 (25:10 → 01:10) y se truncan a minutos. Por eso, en R4, si ya no hay buses ese día, se devuelve el primero del día siguiente. El motor también aplica el módulo por si la red del profesor trae horas así.
 7. **Coordenadas para el mapa.** La posición de cada estación es el promedio de las de sus vagones. Van en `coordenadas.csv`, aparte de los tres CSV del contrato: el motor solo lee esos tres, y el mapa de la app usa este cuarto archivo únicamente para dibujar.
+8. **Fondo del mapa.** `app/fondo_mapa.jpg` son 154 mosaicos de OpenStreetMap (zoom 14) descargados una sola vez y unidos en una imagen, para que el mapa funcione sin internet. El mapa usa la misma proyección (Web Mercator), así cada estación cae sobre su calle. Datos y mapa: © colaboradores de OpenStreetMap ([licencia](https://www.openstreetmap.org/copyright)).
 
 ## Reglas del motor
 

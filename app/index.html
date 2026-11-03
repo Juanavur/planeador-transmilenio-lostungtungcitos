@@ -221,6 +221,12 @@
   .mapa-norte, #mapa-zoom { position: absolute; left: 10px; font: 700 12px/1 var(--f-titulo); letter-spacing: .06em; color: var(--suave);
                             background: var(--panel); padding: 6px 8px; border-radius: 8px; pointer-events: none; }
   .mapa-norte { top: 10px; } #mapa-zoom { bottom: 10px; }
+  .mapa-osm { position: absolute; right: 0; bottom: 0; font: 500 11px/1 var(--f-texto); color: var(--suave); background: var(--panel);
+              padding: 5px 8px; border-top-left-radius: 8px; text-decoration: none; opacity: .92; }
+  .mapa-osm:hover { color: var(--texto); text-decoration: underline; }
+  .m-fondo { opacity: .8; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .m-fondo { filter: invert(1) hue-rotate(180deg) brightness(.8) contrast(.9) saturate(.5); opacity: .75; } }
+  :root[data-theme="dark"] .m-fondo { filter: invert(1) hue-rotate(180deg) brightness(.8) contrast(.9) saturate(.5); opacity: .75; }
   .m-viaje { border: 1px solid var(--borde); border-radius: 12px; padding: 12px 14px; }
   .m-viaje b { font: 800 18px/1.2 var(--f-titulo); }
   .m-lista { columns: 2 120px; margin: 0; padding-left: 20px; font-size: 14px; }
@@ -338,7 +344,7 @@
     <div class="mapa-cont">
       <div class="bloque">
         <div class="cabeza"><h2>Mapa de la red</h2></div>
-        <p class="ayuda">La red troncal vista desde arriba, con la posición real de cada estación. Cada color es una zona.</p>
+        <p class="ayuda">La red troncal sobre el mapa de Bogotá, con la posición real de cada estación. Cada color es una zona.</p>
         <div class="fila" style="margin-bottom:12px">
           <label for="mapa-ruta" style="flex:0 1 260px">Resaltar una ruta<select id="mapa-ruta"></select></label>
         </div>
@@ -351,6 +357,7 @@
             <button onclick="reiniciarMapa()" aria-label="Ver toda la red" title="Ver toda la red">⤢</button>
           </div>
           <span id="mapa-zoom">×1</span>
+          <a class="mapa-osm" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© colaboradores de OpenStreetMap</a>
         </div>
       </div>
       <aside class="bloque" id="mapa-info"></aside>
@@ -725,19 +732,22 @@ function grafica(series, ejeX, ejeY, W = 520, H = 200) {
 }
 
 // ---------- Mapa cenital de la red (vista desde arriba, con las coordenadas reales de cada estación)
+// fondo: mosaicos de OpenStreetMap a zoom 14 unidos en una sola imagen (© colaboradores de OpenStreetMap)
+const FONDO_MAPA = "fondo_mapa.jpg"; // FONDO-MAPA
+const MOSAICO = {z: 14, x0: 4813, y0: 7973, ancho: 2816, alto: 3584};
 const MAPA = {datos: null, ruta: "", viaje: null, sel: null, z: 1, cx: 0, cy: 0, W: 600, H: 860, punteros: new Map(), arrastre: null};
 
 async function cargarMapa() {
   MAPA.datos = await api("mapa");
-  const d = MAPA.datos, pad = 24, padDer = 110;
+  const d = MAPA.datos;
   if (!d.estaciones.length) { $("mapa-svg").innerHTML = ""; return; }
-  const lats = d.estaciones.map(e => e.lat), lons = d.estaciones.map(e => e.lon);
-  const la0 = Math.min(...lats), la1 = Math.max(...lats), lo0 = Math.min(...lons), lo1 = Math.max(...lons);
-  const k = Math.cos((la0 + la1) / 2 * Math.PI / 180);               // corrige la escala de la longitud
-  const esc_ = (MAPA.W - pad - padDer) / ((lo1 - lo0) * k);
-  MAPA.H = Math.round((la1 - la0) * esc_ + 2 * pad);
+  // Web Mercator, la misma proyección de los mosaicos: así cada estación cae sobre su calle
+  const n = Math.pow(2, MOSAICO.z), f = MAPA.W / MOSAICO.ancho;
+  const px = lon => ((lon + 180) / 360 * n - MOSAICO.x0) * 256 * f;
+  const py = lat => ((1 - Math.asinh(Math.tan(lat * Math.PI / 180)) / Math.PI) / 2 * n - MOSAICO.y0) * 256 * f;
+  MAPA.H = MOSAICO.alto * f;
   MAPA.pos = {};
-  for (const e of d.estaciones) MAPA.pos[e.nombre] = [pad + (e.lon - lo0) * k * esc_, pad + (la1 - e.lat) * esc_];
+  for (const e of d.estaciones) MAPA.pos[e.nombre] = [px(e.lon), py(e.lat)];
   MAPA.porNombre = {}; for (const e of d.estaciones) MAPA.porNombre[e.nombre] = e;
   MAPA.recorridos = {}; for (const r of d.rutas) MAPA.recorridos[r.ruta] = r.paradas;
   MAPA.via = {};                     // estaciones que quedan en medio de un tramo expreso (se calcula una vez)
@@ -815,9 +825,10 @@ function dibujarMapa() {
   };
   const linea = (a, b, color, ancho, extra = "") => {
     const pts = [a, ...intermedias(a, b), b].map(n => P[n][0].toFixed(1) + "," + P[n][1].toFixed(1)).join(" ");
-    return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="${ancho}" stroke-linecap="round" stroke-linejoin="round" ${extra}/>`;
+    return `<polyline points="${pts}" fill="none" stroke="var(--panel)" stroke-width="${ancho + 2.2 * s}" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>` +
+           `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="${ancho}" stroke-linecap="round" stroke-linejoin="round" ${extra}/>`;
   };
-  let g = "";
+  let g = `<image class="m-fondo" href="${FONDO_MAPA}" x="0" y="0" width="${MAPA.W}" height="${MAPA.H.toFixed(1)}" preserveAspectRatio="none"/>`;
   // los saltos largos solo se ven al resaltar su ruta o un viaje, salvo que sin ellos quede una parte
   // de la red desconectada: entonces se agrega el más corto que la une (como en el algoritmo de Kruskal)
   const padre = {}, raiz = x => (padre[x] === undefined || padre[x] === x) ? (padre[x] = x) : (padre[x] = raiz(padre[x]));
@@ -828,7 +839,7 @@ function dibujarMapa() {
   for (const sg of saltos) if (raiz(sg.a) !== raiz(sg.b)) { padre[raiz(sg.a)] = raiz(sg.b); visibles.push(sg); }
   for (const sg of visibles) {
     const zona = sg.rutas.find(r => /^[A-Z]/.test(r)) || sg.rutas[0];
-    g += linea(sg.a, sg.b, enfoque ? "var(--linea)" : colorRuta(zona), (enfoque ? 2.2 : 3.2) * s, enfoque ? 'opacity=".7"' : 'opacity=".85"');
+    g += linea(sg.a, sg.b, enfoque ? "var(--gris)" : colorRuta(zona), (enfoque ? 2.4 : 3.4) * s, enfoque ? 'opacity=".75"' : "");
   }
   const destacadas = new Set();
   if (MAPA.ruta) {

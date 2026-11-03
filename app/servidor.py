@@ -245,6 +245,9 @@ class Manejador(BaseHTTPRequestHandler):
         if url.path in ("/", "/index.html"):
             with open(os.path.join(AQUI, "index.html"), encoding="utf-8") as f:
                 return self._enviar(200, f.read(), "text/html; charset=utf-8")
+        if url.path == "/fondo_mapa.jpg":                 # fondo del mapa (© colaboradores de OpenStreetMap)
+            with open(os.path.join(AQUI, "fondo_mapa.jpg"), "rb") as f:
+                return self._enviar(200, f.read(), "image/jpeg")
         if url.path.startswith("/api/"):
             nombre = url.path[5:]
             funcion = RUTAS.get(nombre)
