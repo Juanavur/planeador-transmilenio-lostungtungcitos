@@ -207,6 +207,27 @@
            max-width: calc(100% - 32px); }
   .toast.ver { opacity: 1; transform: translate(-50%, 0); }
   @media (prefers-reduced-motion: reduce) { .toast, .interruptor i, .interruptor i::after { transition: none; } }
+  .mapa-cont { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+  @media (max-width: 880px) { .mapa-cont { grid-template-columns: 1fr; } }
+  .mapa-caja { position: relative; border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; background: var(--bg); }
+  #mapa-svg { display: block; width: 100%; height: min(76vh, 760px); touch-action: none; cursor: grab; user-select: none; }
+  #mapa-svg:active { cursor: grabbing; }
+  .m-est { cursor: pointer; }
+  .m-nom { fill: var(--texto); font-family: var(--f-titulo); font-weight: 700; letter-spacing: .02em; pointer-events: none; }
+  .m-nom.portal { font-weight: 800; }
+  .mapa-ctrl { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .mapa-ctrl button { width: 42px; height: 42px; min-height: 0; padding: 0; border-radius: 12px; font-size: 20px; line-height: 1;
+                      background: var(--panel); box-shadow: 0 2px 8px rgba(0, 0, 0, .08); }
+  .mapa-norte, #mapa-zoom { position: absolute; left: 10px; font: 700 12px/1 var(--f-titulo); letter-spacing: .06em; color: var(--suave);
+                            background: var(--panel); padding: 6px 8px; border-radius: 8px; pointer-events: none; }
+  .mapa-norte { top: 10px; } #mapa-zoom { bottom: 10px; }
+  .m-viaje { border: 1px solid var(--borde); border-radius: 12px; padding: 12px 14px; }
+  .m-viaje b { font: 800 18px/1.2 var(--f-titulo); }
+  .m-lista { columns: 2 120px; margin: 0; padding-left: 20px; font-size: 14px; }
+  .m-lista li { padding: 2px 0; break-inside: avoid; }
+  button.enlace { background: none; border: 0; padding: 0; min-height: 0; color: var(--azul); font: inherit; cursor: pointer; text-align: left; }
+  .m-viaje button.enlace { margin-top: 10px; font-size: 14px; }
+  button.sin-borde { background: none; border: 0; padding: 0; min-height: 0; border-radius: 6px; }
   /*CSS-WEB*/
   @media (max-width: 560px) {
     .ida-vuelta { grid-template-columns: minmax(0, 1fr) auto; } .ida-vuelta label:last-of-type { grid-column: 1 / -1; }
@@ -239,6 +260,7 @@
 </div></header>
 <nav id="pestanas"><div class="nav-in gutter">
   <button data-p="viajar" class="activo">Viajar</button>
+  <button data-p="mapa">Mapa</button>
   <button data-p="buscar">Estaciones</button>
   <button data-p="operar">Operar la red</button>
   <button data-p="fila">Hora pico</button>
@@ -308,6 +330,30 @@
         <div class="fila"><label for="k-rank" style="flex:0 0 170px">Mostrar<select id="k-rank"><option>5</option><option selected>10</option><option>20</option></select></label></div>
         <div id="ranking" class="ranking" style="margin-top:12px"></div>
       </div>
+    </div>
+  </section>
+
+  <!-- ===================== Mapa ===================== -->
+  <section id="mapa">
+    <div class="mapa-cont">
+      <div class="bloque">
+        <div class="cabeza"><h2>Mapa de la red</h2></div>
+        <p class="ayuda">La red troncal vista desde arriba, con la posición real de cada estación. Cada color es una zona.</p>
+        <div class="fila" style="margin-bottom:12px">
+          <label for="mapa-ruta" style="flex:0 1 260px">Resaltar una ruta<select id="mapa-ruta"></select></label>
+        </div>
+        <div class="mapa-caja">
+          <svg id="mapa-svg" role="img" aria-label="Mapa de las estaciones y rutas troncales de TransMilenio"></svg>
+          <span class="mapa-norte" aria-hidden="true">N ↑</span>
+          <div class="mapa-ctrl">
+            <button onclick="zoomMapa(1.4)" aria-label="Acercar">+</button>
+            <button onclick="zoomMapa(1 / 1.4)" aria-label="Alejar">−</button>
+            <button onclick="reiniciarMapa()" aria-label="Ver toda la red" title="Ver toda la red">⤢</button>
+          </div>
+          <span id="mapa-zoom">×1</span>
+        </div>
+      </div>
+      <aside class="bloque" id="mapa-info"></aside>
     </div>
   </section>
 
@@ -524,7 +570,8 @@ async function viaje() {
   });
   $("v-plan").innerHTML = `<div class="resumen-viaje"><b>${total} paradas</b>
       <span class="suave">${plan.length === 1 ? "Viaje directo" : "Un transbordo en " + esc(plan[0][2])}</span></div>
-    <ol class="itinerario">${pasos}</ol>`;
+    <ol class="itinerario">${pasos}</ol>
+    <button class="enlace" style="margin-top:6px" onclick="verViajeEnMapa()">Ver este viaje en el mapa →</button>`;
 }
 $("v-origen").oninput = () => luego("v", viaje); $("v-destino").oninput = () => luego("v", viaje);
 
@@ -677,6 +724,224 @@ function grafica(series, ejeX, ejeY, W = 520, H = 200) {
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gráfica de ${esc(ejeY)} contra ${esc(ejeX)}">${g}</svg>`;
 }
 
+// ---------- Mapa cenital de la red (vista desde arriba, con las coordenadas reales de cada estación)
+const MAPA = {datos: null, ruta: "", viaje: null, sel: null, z: 1, cx: 0, cy: 0, W: 600, H: 860, punteros: new Map(), arrastre: null};
+
+async function cargarMapa() {
+  MAPA.datos = await api("mapa");
+  const d = MAPA.datos, pad = 24, padDer = 110;
+  if (!d.estaciones.length) { $("mapa-svg").innerHTML = ""; return; }
+  const lats = d.estaciones.map(e => e.lat), lons = d.estaciones.map(e => e.lon);
+  const la0 = Math.min(...lats), la1 = Math.max(...lats), lo0 = Math.min(...lons), lo1 = Math.max(...lons);
+  const k = Math.cos((la0 + la1) / 2 * Math.PI / 180);               // corrige la escala de la longitud
+  const esc_ = (MAPA.W - pad - padDer) / ((lo1 - lo0) * k);
+  MAPA.H = Math.round((la1 - la0) * esc_ + 2 * pad);
+  MAPA.pos = {};
+  for (const e of d.estaciones) MAPA.pos[e.nombre] = [pad + (e.lon - lo0) * k * esc_, pad + (la1 - e.lat) * esc_];
+  MAPA.porNombre = {}; for (const e of d.estaciones) MAPA.porNombre[e.nombre] = e;
+  MAPA.recorridos = {}; for (const r of d.rutas) MAPA.recorridos[r.ruta] = r.paradas;
+  MAPA.via = {};                     // estaciones que quedan en medio de un tramo expreso (se calcula una vez)
+  // distancia de cada estación a su vecina más cercana: sirve para reconocer los saltos largos entre corredores
+  MAPA.nn = {};
+  const nombres = Object.keys(MAPA.pos);
+  for (const a of nombres) {
+    let m = Infinity;
+    for (const b of nombres) if (a !== b) m = Math.min(m, Math.hypot(MAPA.pos[a][0] - MAPA.pos[b][0], MAPA.pos[a][1] - MAPA.pos[b][1]));
+    MAPA.nn[a] = m;
+  }
+  if (!MAPA.cx) reiniciarMapa(false);
+  $("mapa-ruta").innerHTML = `<option value="">Todas las rutas</option>` + opciones(d.rutas.map(r => r.ruta), MAPA.ruta);
+  dibujarMapa(); pintarInfoMapa();
+}
+
+function vistaMapa() {
+  const r = $("mapa-svg").getBoundingClientRect(), cw = r.width || 600, ch = r.height || 600;
+  const ajuste = Math.max(MAPA.W / cw, MAPA.H / ch);                 // unidades del mapa por pixel con zoom 1
+  return {vw: cw * ajuste / MAPA.z, vh: ch * ajuste / MAPA.z, r};
+}
+function reiniciarMapa(redibujar = true) { MAPA.z = 1; MAPA.cx = MAPA.W / 2; MAPA.cy = MAPA.H / 2; if (redibujar) dibujarMapa(); }
+function zoomMapa(f, px, py) {
+  const z = Math.min(8, Math.max(1, MAPA.z * f));
+  if (px !== undefined) { MAPA.cx = px + (MAPA.cx - px) * MAPA.z / z; MAPA.cy = py + (MAPA.cy - py) * MAPA.z / z; }
+  MAPA.z = z; dibujarMapa();
+}
+
+function tramosDelViaje() {
+  // estaciones por las que pasa el viaje planeado, tramo por tramo
+  if (!MAPA.viaje) return [];
+  return MAPA.viaje.map(([ruta, sube, baja]) => {
+    const l = MAPA.recorridos[ruta] || [], i = l.indexOf(sube), j = l.indexOf(baja);
+    return {ruta, paradas: i >= 0 && j > i ? l.slice(i, j + 1) : [sube, baja]};
+  });
+}
+
+function dibujarMapa() {
+  const d = MAPA.datos; if (!d) return;
+  const {z} = MAPA, {vw, vh} = vistaMapa();
+  const svg = $("mapa-svg");
+  svg.setAttribute("viewBox", `${(MAPA.cx - vw / 2).toFixed(1)} ${(MAPA.cy - vh / 2).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
+  const P = MAPA.pos, s = 1 / Math.sqrt(z);                            // marcas un poco más finas al acercar
+  const viaje = tramosDelViaje(), enfoque = MAPA.ruta || viaje.length;
+  // tramos únicos de la red: cada par de estaciones seguidas en alguna ruta
+  const segs = new Map();
+  for (const r of d.rutas) for (let i = 1; i < r.paradas.length; i++) {
+    const a = r.paradas[i - 1], b = r.paradas[i]; if (!P[a] || !P[b]) continue;
+    const key = a < b ? a + "|" + b : b + "|" + a;
+    if (!segs.has(key)) segs.set(key, {a, b, rutas: []});
+    segs.get(key).rutas.push(r.ruta);
+  }
+  // un bus expreso se salta estaciones: su tramo se dibuja pasando por las que quedan en medio,
+  // así sigue el corredor en vez de cruzar la ciudad en línea recta
+  const intermedias = (a, b) => {
+    const key = a + "|" + b;
+    if (MAPA.via[key]) return MAPA.via[key];
+    const [ax, ay] = P[a], [bx, by] = P[b], dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1, res = [];
+    for (const n in P) {
+      if (n === a || n === b) continue;
+      const [cx, cy] = P[n], t = ((cx - ax) * dx + (cy - ay) * dy) / L2;
+      if (t <= 0.02 || t >= 0.98) continue;
+      if (Math.hypot(cx - (ax + t * dx), cy - (ay + t * dy)) < 7) res.push([t, n]);
+    }
+    return (MAPA.via[key] = res.sort((x, y) => x[0] - y[0]).map(x => x[1]));
+  };
+  // un tramo es "de corredor" si cada pedazo une estaciones vecinas; si no, es un salto entre corredores
+  const deCorredor = (a, b) => {
+    const l = [a, ...intermedias(a, b), b];
+    for (let i = 1; i < l.length; i++) {
+      const d = Math.hypot(P[l[i]][0] - P[l[i - 1]][0], P[l[i]][1] - P[l[i - 1]][1]);
+      if (d > 3.2 * Math.max(MAPA.nn[l[i]], MAPA.nn[l[i - 1]]) && d > 45) return false;
+    }
+    return true;
+  };
+  const linea = (a, b, color, ancho, extra = "") => {
+    const pts = [a, ...intermedias(a, b), b].map(n => P[n][0].toFixed(1) + "," + P[n][1].toFixed(1)).join(" ");
+    return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="${ancho}" stroke-linecap="round" stroke-linejoin="round" ${extra}/>`;
+  };
+  let g = "";
+  // los saltos largos solo se ven al resaltar su ruta o un viaje, salvo que sin ellos quede una parte
+  // de la red desconectada: entonces se agrega el más corto que la une (como en el algoritmo de Kruskal)
+  const padre = {}, raiz = x => (padre[x] === undefined || padre[x] === x) ? (padre[x] = x) : (padre[x] = raiz(padre[x]));
+  const visibles = [], saltos = [];
+  for (const sg of segs.values()) (deCorredor(sg.a, sg.b) ? visibles : saltos).push(sg);
+  for (const sg of visibles) padre[raiz(sg.a)] = raiz(sg.b);
+  saltos.sort((x, y) => Math.hypot(P[x.a][0] - P[x.b][0], P[x.a][1] - P[x.b][1]) - Math.hypot(P[y.a][0] - P[y.b][0], P[y.a][1] - P[y.b][1]));
+  for (const sg of saltos) if (raiz(sg.a) !== raiz(sg.b)) { padre[raiz(sg.a)] = raiz(sg.b); visibles.push(sg); }
+  for (const sg of visibles) {
+    const zona = sg.rutas.find(r => /^[A-Z]/.test(r)) || sg.rutas[0];
+    g += linea(sg.a, sg.b, enfoque ? "var(--linea)" : colorRuta(zona), (enfoque ? 2.2 : 3.2) * s, enfoque ? 'opacity=".7"' : 'opacity=".85"');
+  }
+  const destacadas = new Set();
+  if (MAPA.ruta) {
+    const l = MAPA.recorridos[MAPA.ruta] || [];
+    for (let i = 1; i < l.length; i++) if (P[l[i - 1]] && P[l[i]]) g += linea(l[i - 1], l[i], colorRuta(MAPA.ruta), 6 * s);
+    l.forEach(x => destacadas.add(x));
+  }
+  for (const t of viaje) {
+    for (let i = 1; i < t.paradas.length; i++) if (P[t.paradas[i - 1]] && P[t.paradas[i]]) g += linea(t.paradas[i - 1], t.paradas[i], colorRuta(t.ruta), 7 * s);
+    t.paradas.forEach(x => destacadas.add(x));
+  }
+  // estaciones
+  const extremos = new Set(viaje.length ? [viaje[0].paradas[0], viaje[viaje.length - 1].paradas.slice(-1)[0]] : []);
+  if (viaje.length > 1) extremos.add(viaje[1].paradas[0]);
+  for (const e of d.estaciones) {
+    if (!P[e.nombre]) continue;
+    const [x, y] = P[e.nombre], portal = e.nombre.startsWith("PORTAL"), dest = destacadas.has(e.nombre), sel = MAPA.sel === e.nombre;
+    const r = (portal ? 6 : 4) * s * (dest || sel ? 1.25 : 1) * (extremos.has(e.nombre) ? 1.35 : 1);
+    const borde = !e.abierta ? "var(--ambar)" : sel ? "var(--azul)" : "var(--texto)";
+    const relleno = extremos.has(e.nombre) ? "var(--texto)" : "var(--panel)";
+    g += `<circle class="m-est" data-n="${esc(e.nombre)}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}" fill="${relleno}" stroke="${borde}"
+           stroke-width="${(sel ? 3 : 1.8) * s}" ${e.abierta ? "" : `stroke-dasharray="${2 * s} ${1.5 * s}"`}><title>${esc(e.nombre)}</title></circle>`;
+    const conNombre = portal || sel || extremos.has(e.nombre) || (enfoque && dest) || z >= 3;
+    if (conNombre) {
+      const fs = (portal || extremos.has(e.nombre) ? 11.5 : 10) * s;
+      g += `<text class="m-nom${portal ? " portal" : ""}" x="${(x + r + 3 * s).toFixed(1)}" y="${(y + fs * 0.35).toFixed(1)}" font-size="${fs.toFixed(2)}"
+             stroke="var(--panel)" stroke-width="${3 * s}" paint-order="stroke">${esc(e.nombre)}</text>`;
+    }
+  }
+  svg.innerHTML = g;
+  $("mapa-zoom").textContent = "×" + (Math.round(z * 10) / 10);
+}
+
+function pintarInfoMapa() {
+  const e = MAPA.sel && MAPA.porNombre ? MAPA.porNombre[MAPA.sel] : null;
+  let html = "";
+  if (MAPA.viaje && MAPA.viaje.length) {
+    const t = MAPA.viaje, total = t.reduce((a, x) => a + x[3], 0);
+    html += `<div class="m-viaje"><p class="sentido" style="margin:0 0 6px">Tu viaje en el mapa</p>
+      <b>${esc(t[0][1])} → ${esc(t[t.length - 1][2])}</b><span class="suave"> · ${total} paradas</span>
+      <div class="rutas-letrero" style="margin-top:8px">${t.map(x => insignia(x[0], true)).join(" ")}</div>
+      <button class="enlace" onclick="MAPA.viaje=null;dibujarMapa();pintarInfoMapa()">Quitar el viaje del mapa</button></div>`;
+  }
+  if (e) {
+    html += `<div class="letrero" style="margin-top:${html ? 14 : 0}px"><b>${esc(e.nombre)}</b>
+        <span class="estado ${e.abierta ? "abierta" : "cerrada"}">${e.abierta ? "Abierta" : "Cerrada"}</span>
+        <small>${e.buses.toLocaleString("es-CO")} buses al día · ${e.rutas.length} rutas</small>
+        <div class="rutas-letrero">${e.rutas.map(r => `<button class="sin-borde" onclick="elegirRutaMapa('${esc(r)}')" title="Ver la ruta ${esc(r)}">${insignia(r, true)}</button>`).join("")}</div></div>
+      <div class="fila" style="margin-top:12px">
+        <button onclick="usarEnViaje('v-origen')">Salir de aquí</button><button onclick="usarEnViaje('v-destino')">Ir aquí</button></div>`;
+  } else if (!html) {
+    html = `<p class="suave" style="margin:0">Toca una estación para ver sus rutas, o elige una ruta arriba para verla completa.
+      Arrastra para moverte y usa + y − (o la rueda del mouse) para acercarte.</p>`;
+  }
+  if (MAPA.ruta) {
+    const l = MAPA.recorridos[MAPA.ruta] || [];
+    html += `<p class="sentido" style="margin:16px 0 6px">${insignia(MAPA.ruta, true)} ${l.length} paradas</p>
+      <ol class="m-lista">${l.map(x => `<li><button class="enlace" onclick="elegirEstacionMapa('${esc(x)}')">${esc(x)}</button></li>`).join("")}</ol>`;
+  }
+  $("mapa-info").innerHTML = html;
+}
+
+function elegirRutaMapa(r) { MAPA.ruta = r; $("mapa-ruta").value = r; dibujarMapa(); pintarInfoMapa(); }
+function elegirEstacionMapa(n) { MAPA.sel = n; dibujarMapa(); pintarInfoMapa(); }
+function usarEnViaje(campo) {
+  $(campo).value = MAPA.sel;
+  avisar(campo === "v-origen" ? "Origen: " + MAPA.sel : "Destino: " + MAPA.sel);
+  viaje().then(async () => {
+    const o = est("v-origen"), d = est("v-destino");
+    if (o && d && o !== d) { const plan = await api("viaje", {origen: o, destino: d}); MAPA.viaje = plan && plan.length ? plan : null; }
+    dibujarMapa(); pintarInfoMapa();
+  });
+}
+async function verViajeEnMapa() {
+  const o = est("v-origen"), d = est("v-destino");
+  if (!o || !d) return;
+  const plan = await api("viaje", {origen: o, destino: d});
+  MAPA.viaje = plan && plan.length ? plan : null; MAPA.sel = null; MAPA.ruta = "";
+  document.querySelector('nav button[data-p="mapa"]').click();
+}
+
+// interacción: tocar estación, arrastrar, rueda y pellizco
+(() => {
+  const svg = $("mapa-svg");
+  const aSvg = (cx, cy) => { const {vw, vh, r} = vistaMapa();
+    return [MAPA.cx - vw / 2 + (cx - r.left) / r.width * vw, MAPA.cy - vh / 2 + (cy - r.top) / r.height * vh]; };
+  svg.addEventListener("click", ev => { const c = ev.target.closest(".m-est"); if (c && !MAPA.movio) elegirEstacionMapa(c.dataset.n); });
+  svg.addEventListener("wheel", ev => { ev.preventDefault(); const [x, y] = aSvg(ev.clientX, ev.clientY); zoomMapa(ev.deltaY < 0 ? 1.25 : 0.8, x, y); }, {passive: false});
+  svg.addEventListener("pointerdown", ev => { MAPA.punteros.set(ev.pointerId, [ev.clientX, ev.clientY]); MAPA.movio = false;
+    MAPA.arrastre = {x: ev.clientX, y: ev.clientY, cx: MAPA.cx, cy: MAPA.cy, z: MAPA.z, dist: null}; });
+  svg.addEventListener("pointermove", ev => {
+    if (!MAPA.punteros.has(ev.pointerId) || !MAPA.arrastre) return;
+    MAPA.punteros.set(ev.pointerId, [ev.clientX, ev.clientY]);
+    const {vw, vh, r} = vistaMapa(), a = MAPA.arrastre;
+    if (MAPA.punteros.size === 2) {
+      const [p, q] = [...MAPA.punteros.values()], dist = Math.hypot(p[0] - q[0], p[1] - q[1]);
+      if (a.dist === null) a.dist = dist;
+      MAPA.z = Math.min(8, Math.max(1, a.z * dist / a.dist)); MAPA.movio = true; dibujarMapa(); return;
+    }
+    const dx = ev.clientX - a.x, dy = ev.clientY - a.y;
+    if (Math.abs(dx) + Math.abs(dy) > 4) MAPA.movio = true;
+    if (!MAPA.movio) return;
+    svg.setPointerCapture(ev.pointerId);
+    MAPA.cx = a.cx - dx / r.width * vw; MAPA.cy = a.cy - dy / r.height * vh;
+    dibujarMapa();
+  });
+  const soltar = ev => { MAPA.punteros.delete(ev.pointerId); if (!MAPA.punteros.size) { MAPA.arrastre = null; setTimeout(() => MAPA.movio = false, 0); } };
+  svg.addEventListener("pointerup", soltar); svg.addEventListener("pointercancel", soltar);
+  $("mapa-ruta").onchange = () => { MAPA.ruta = $("mapa-ruta").value; dibujarMapa(); pintarInfoMapa(); };
+  document.querySelector('nav button[data-p="mapa"]').addEventListener("click", () => setTimeout(cargarMapa, 0));
+  window.addEventListener("resize", () => { if ($("mapa").classList.contains("activa")) dibujarMapa(); });
+})();
+
 // ---------- Tabla de datos
 const COLUMNAS = {
   estaciones: [["estacion", "Estación"], ["estado", "Estado"], ["rutas", "Rutas que paran", "num"], ["buses_al_dia", "Buses al día", "num"]],
@@ -756,7 +1021,8 @@ function descargarCSV() {
 // la tabla se recarga sola cuando se abre la pestaña o cambia la red
 document.querySelector('nav button[data-p="datos"]').addEventListener("click", cargarDatos);
 const refrescarOriginal = refrescar;
-refrescar = async () => { await refrescarOriginal(); if ($("datos").classList.contains("activa")) cargarDatos(); };
+refrescar = async () => { await refrescarOriginal(); if ($("datos").classList.contains("activa")) cargarDatos();
+                          if ($("mapa").classList.contains("activa")) cargarMapa(); };
 
 (() => { const d = new Date(); $("p-hora").value = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); })();
 refrescar();

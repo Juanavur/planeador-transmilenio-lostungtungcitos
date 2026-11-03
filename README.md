@@ -22,7 +22,7 @@ Por qué no usamos Streamlit ni pandas en la app: en Windows con *Control inteli
 aplicaciones* activado, esas librerías traen archivos `.dll` sin firmar que el sistema bloquea.
 Sin dependencias, la app arranca en cualquier computador con Python.
 
-La app tiene seis pestañas: **Estaciones** (R1–R3), **Viajar** (R4–R6), **Operar la red**
+La app tiene siete pestañas: **Viajar** (R4–R6), **Mapa** (la red vista desde arriba, con la posición real de cada estación), **Estaciones** (R1–R3), **Operar la red**
 (R7–R9), **Fila de abordaje** (R10), **Rendimiento** (R11) y **Datos**, una tabla con las
 estaciones, las rutas y los horarios que tiene cargados el motor, con búsqueda, orden por
 columna y descarga en CSV.
@@ -93,6 +93,7 @@ datos/                     ← la conversión y los datos
   estaciones.csv           nombre
   rutas.csv                ruta, orden, estacion
   horarios.csv             ruta, estacion, hora
+  coordenadas.csv          estacion, lat, lon (solo para dibujar el mapa; el motor no lo lee)
 README.md                  este archivo (decisiones R12 + comando para arrancar)
 integrantes.md             quién hizo qué requisito
 ```
@@ -238,6 +239,7 @@ Fuente: GTFS estático de TransMilenio del 14 de julio de 2021 ([datos abiertos 
 4. **Un solo día de servicio.** Se usa lunes, un día hábil, para que "buses al día" sea un día de verdad y no la suma de lunes, sábado y domingo. Se puede cambiar con `--dia`.
 5. **Cada ruta va en un solo sentido.** En TransMilenio cada `route_id` ya va en un sentido (B74 va al norte y J74 al sur). El orden de paradas es el patrón más frecuente entre sus viajes; si hay empate, el más largo. Una estación repetida dentro de la ruta se deja solo la primera vez.
 6. **Horas como 25:10.** Se pasan a la hora real del reloj con módulo 24 (25:10 → 01:10) y se truncan a minutos. Por eso, en R4, si ya no hay buses ese día, se devuelve el primero del día siguiente. El motor también aplica el módulo por si la red del profesor trae horas así.
+7. **Coordenadas para el mapa.** La posición de cada estación es el promedio de las de sus vagones. Van en `coordenadas.csv`, aparte de los tres CSV del contrato: el motor solo lee esos tres, y el mapa de la app usa este cuarto archivo únicamente para dibujar.
 
 ## Reglas del motor
 

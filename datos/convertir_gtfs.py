@@ -9,6 +9,8 @@ Salida (por defecto, esta misma carpeta datos/):
     estaciones.csv  -> nombre
     rutas.csv       -> ruta, orden, estacion
     horarios.csv    -> ruta, estacion, hora
+    coordenadas.csv -> estacion, lat, lon   (solo para dibujar el mapa en la app;
+                                             el motor NO lo lee)
 
 Decisiones (explicadas también en el README):
   1. Por defecto solo se toma el sistema TRONCAL (las estaciones de TransMilenio).
@@ -25,6 +27,7 @@ Decisiones (explicadas también en el README):
      patrón, se deja solo la primera aparición.
   6. Horas: el GTFS usa horas como 25:10 para viajes que pasan de medianoche.
      Se convierten a la hora real del reloj (25:10 -> 01:10) y se trunca a minutos.
+  7. Coordenadas: la posición de una estación es el promedio de las de sus vagones.
 """
 
 import argparse
@@ -189,10 +192,20 @@ def convertir(origen, salida, todo=False, dia="monday"):
         os.path.join(salida, "rutas.csv"), index=False)
     hor.to_csv(os.path.join(salida, "horarios.csv"), index=False)
 
+    # coordenadas para el mapa de la app (promedio de los vagones de cada estación)
+    stops["lat"] = pd.to_numeric(stops["stop_lat"], errors="coerce")
+    stops["lon"] = pd.to_numeric(stops["stop_lon"], errors="coerce")
+    usados_st = set(st["stop_id"])
+    coords = (stops[stops["stop_id"].isin(usados_st) & stops["estacion"].isin(estaciones)]
+              .groupby("estacion")[["lat", "lon"]].mean().round(6).reset_index())
+    coords.columns = ["estacion", "lat", "lon"]
+    coords.to_csv(os.path.join(salida, "coordenadas.csv"), index=False)
+
     print("Listo ->", salida)
     print("  estaciones:", len(estaciones))
     print("  rutas:", len(estaciones_de_ruta), " filas rutas.csv:", len(filas_rutas))
     print("  filas horarios.csv:", len(hor))
+    print("  estaciones con coordenadas:", len(coords))
     if tmp is not None:
         tmp.cleanup()
 

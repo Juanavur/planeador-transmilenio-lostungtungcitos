@@ -200,6 +200,33 @@ def api_tabla_horarios(q):
     return filas
 
 
+# ------------------------------------------------------------------ mapa
+def _coordenadas():
+    import csv
+    ruta = os.path.join(CARPETA_DATOS, "coordenadas.csv")
+    res = {}
+    if os.path.exists(ruta):
+        with open(ruta, encoding="utf-8") as f:
+            for fila in csv.DictReader(f):
+                res[fila["estacion"]] = (float(fila["lat"]), float(fila["lon"]))
+    return res
+
+
+COORDENADAS = _coordenadas()
+
+
+def api_mapa(q):
+    """Estaciones con su posición real y el recorrido de cada ruta, para dibujar el mapa."""
+    estaciones = []
+    for nombre, abierta, n_rutas, buses in RED.todas_las_estaciones():
+        if nombre in COORDENADAS:
+            lat, lon = COORDENADAS[nombre]
+            estaciones.append({"nombre": nombre, "lat": lat, "lon": lon, "abierta": abierta,
+                               "buses": buses, "rutas": RED.rutas_de(nombre)})
+    rutas = [{"ruta": r, "paradas": RED.recorrido(r)} for r in RED.nombres_rutas()]
+    return {"estaciones": estaciones, "rutas": rutas}
+
+
 RUTAS = {name[4:]: f for name, f in list(globals().items()) if name.startswith("api_")}
 
 
