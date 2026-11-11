@@ -232,12 +232,12 @@ RUTAS = {name[4:]: f for name, f in list(globals().items()) if name.startswith("
 
 
 class Manejador(BaseHTTPRequestHandler):
-    def _enviar(self, codigo, cuerpo, tipo):
+    def _enviar(self, codigo, cuerpo, tipo, cache="no-store"):
         datos = cuerpo.encode("utf-8") if isinstance(cuerpo, str) else cuerpo
         self.send_response(codigo)
         self.send_header("Content-Type", tipo)
         self.send_header("Content-Length", str(len(datos)))
-        self.send_header("Cache-Control", "no-store")
+        self.send_header("Cache-Control", cache)
         self.end_headers()
         self.wfile.write(datos)
 
@@ -246,9 +246,9 @@ class Manejador(BaseHTTPRequestHandler):
         if url.path in ("/", "/index.html"):
             with open(os.path.join(AQUI, "index.html"), encoding="utf-8") as f:
                 return self._enviar(200, f.read(), "text/html; charset=utf-8")
-        if url.path == "/fondo_mapa.jpg":                 # fondo del mapa (© colaboradores de OpenStreetMap)
+        if url.path == "/fondo_mapa.jpg":
             with open(os.path.join(AQUI, "fondo_mapa.jpg"), "rb") as f:
-                return self._enviar(200, f.read(), "image/jpeg")
+                return self._enviar(200, f.read(), "image/jpeg", "public, max-age=86400")
         if url.path.startswith("/api/"):
             nombre = url.path[5:]
             funcion = RUTAS.get(nombre)
