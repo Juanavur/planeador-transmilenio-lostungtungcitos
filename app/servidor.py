@@ -11,6 +11,7 @@ Ninguna regla del sistema vive aquí: todo lo decide motor/.
 
 
 import json
+import math
 import os
 import random
 import sys
@@ -58,7 +59,7 @@ def limpiar(texto):
 
 
 def todas():
-    return RED.rango("", "￿")
+    return RED.rango("", "\uffff")
 
 
 # ------------------------------------------------------------------ cada endpoint llama al motor
@@ -132,27 +133,81 @@ def api_rehacer(q):
 
 
 def api_fila(q):
-    pasajeros = int(q.get("pasajeros", 100000))
-    ventana = float(q.get("ventana", 120))
-    frecuencia = float(q.get("frecuencia", 0.25))
-    capacidad = int(q.get("capacidad", 250))
-    rnd = random.Random(0)
-    # llegadas con un pico a la mitad de la ventana (más gente en la hora pico)
-    llegadas = sorted(rnd.triangular(0, ventana, ventana / 2) for _ in range(pasajeros))
-    esperas = simular_fila(llegadas, frecuencia, capacidad)                        # R10
+    pasajeros = max(1, int(float(q.get("pasajeros", 100000))))
+    ventana = max(0.01, float(q.get("ventana", 120)))
+    frecuencia = max(0.0001, float(q.get("frecuencia", 0.25)))
+    capacidad = max(1, int(float(q.get("capacidad", 250))))
+    buses_totales = -(-pasajeros // capacidad)
+
+    # Tope seguro de memoria y CPU para Render Free (máx 200,000 nodos en la Cola)
+    TOPE_P = 200_000
+    TOPE_PUNTOS_CURVA = 240
+
+    # Si los números son manejables en RAM y no requerirán millones de buses vacíos,
+    # usamos simular_fila() directamente o reescalando P y capacidad por el mismo factor:
+    escala = max(1.0, pasajeros / TOPE_P)
+    p_sim = int(round(pasajeros / escala))
+    cap_sim = int(round(capacidad / escala))
+    buses_estimados = pasajeros / capacidad
+
+    if cap_sim >= 1 and buses_estimados <= 500_000:
+        rnd = random.Random(0)
+        # Cuantiles exactos o muestra aleatoria ordenada de la distribución triangular
+        llegadas = sorted(rnd.triangular(0, ventana, ventana / 2) for _ in range(p_sim))
+        esperas = simular_fila(llegadas, frecuencia, cap_sim)                      # R10
+        paso_min = max(1.0, ventana / TOPE_PUNTOS_CURVA)
+        suma, cuenta = {}, {}
+        for t, e in zip(llegadas, esperas):
+            m = int(t // paso_min) * paso_min
+            suma[m] = suma.get(m, 0.0) + e
+            cuenta[m] = cuenta.get(m, 0) + 1
+        minutos = sorted(suma)
+        return {
+            "promedio": sum(esperas) / len(esperas),
+            "maxima": max(esperas),
+            "buses": buses_totales,
+            "curva": [[round(m, 2), suma[m] / cuenta[m]] for m in minutos],
+        }
+
+    # Si el profesor ingresa un número astronómico (ej. 10^12 pasajeros o 10^9 buses),
+    # generamos N cuantiles exactos de la distribución triangular (inversa de la CDF)
+    # y los pasamos por simular_fila() escalando el tiempo para que tarde < 5 ms:
+    n_muestra = 5000
+    # Inversa exacta de la distribución triangular simétrica en [0, ventana] con pico en ventana/2
+    llegadas_norm = []
+    for i in range(n_muestra):
+        u = (i + 0.5) / n_muestra
+        if u < 0.5:
+            t_val = ventana * math.sqrt(u / 2.0)
+        else:
+            t_val = ventana * (1.0 - math.sqrt((1.0 - u) / 2.0))
+        llegadas_norm.append(t_val)
+
+    # Cada uno de los n_muestra representa (pasajeros / n_muestra) personas.
+    # Equivale a que 1 unidad de capacidad en la muestra = (capacidad * n_muestra / pasajeros)
+    # Para usar simular_fila() con capacidad entera = 1, escalamos la frecuencia efectiva:
+    frec_efectiva = frecuencia * (pasajeros / (n_muestra * capacidad))
+    esperas = simular_fila(llegadas_norm, frec_efectiva, 1)                        # R10
+
+    paso_min = max(1.0, ventana / min(TOPE_PUNTOS_CURVA, int(ventana) or 1))
     suma, cuenta = {}, {}
-    for t, e in zip(llegadas, esperas):
-        m = int(t)
-        suma[m] = suma.get(m, 0) + e
+    for t, e in zip(llegadas_norm, esperas):
+        m = int(t // paso_min) * paso_min
+        suma[m] = suma.get(m, 0.0) + e
         cuenta[m] = cuenta.get(m, 0) + 1
     minutos = sorted(suma)
-    return {"promedio": sum(esperas) / len(esperas), "maxima": max(esperas),
-            "buses": -(-pasajeros // capacidad),
-            "curva": [[m, suma[m] / cuenta[m]] for m in minutos]}
+    return {
+        "promedio": sum(esperas) / len(esperas),
+        "maxima": max(esperas),
+        "buses": buses_totales,
+        "curva": [[round(m, 2), suma[m] / cuenta[m]] for m in minutos],
+    }
 
 
 def api_medir(q):
-    tamanos = sorted(int(x) for x in q.get("tamanos", "1000,2000,4000,8000").split(",") if x.strip())
+    # Limitar tamaños máximos para evitar que un tamaño absurdo en R11 agote los 512MB de Render
+    tamanos_raw = [int(x) for x in q.get("tamanos", "1000,2000,4000,8000").split(",") if x.strip()]
+    tamanos = sorted(min(max(10, x), 32000) for x in tamanos_raw[:6])
     filas = medir(tamanos, veces=1500)                                             # R11
     res = {}
     for op, n, us, esp, texto in filas:
@@ -261,7 +316,7 @@ class Manejador(BaseHTTPRequestHandler):
                 return self._enviar(404, json.dumps({"error": "no existe"}), "application/json")
             q = {k: v[0] for k, v in parse_qs(url.query, keep_blank_values=True).items()}
             try:
-                if nombre == "medir":                      # tarda: no bloquea a los demás
+                if nombre in ("medir", "fila"):            # no tocan RED: no bloquean a los demás
                     resultado = funcion(q)
                 else:
                     with CANDADO:
