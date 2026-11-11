@@ -273,17 +273,22 @@ class Manejador(BaseHTTPRequestHandler):
 
 
 def main():
+    en_render = "PORT" in os.environ          # Render define PORT; en tu PC no existe
     puerto = int(os.environ.get("PORT", 8501))
+    host = "0.0.0.0" if en_render else "127.0.0.1"
     while True:
         try:
-            servidor = ThreadingHTTPServer(("127.0.0.1", puerto), Manejador)
+            servidor = ThreadingHTTPServer((host, puerto), Manejador)
             break
         except OSError:
+            if en_render:
+                raise                         # en Render no cambiamos de puerto
             puerto += 1
     url = "http://localhost:%d" % puerto
-    print("Red cargada: %d estaciones, %d rutas" % (RED.num_estaciones(), len(RED.nombres_rutas())))
-    print("App lista en", url, "  (Ctrl + C para cerrar)")
-    threading.Timer(0.8, lambda: webbrowser.open(url)).start()
+    print("Red cargada: %d estaciones, %d rutas" % (RED.num_estaciones(), len(RED.nombres_rutas())), flush=True)
+    print("App lista en", url, "  (Ctrl + C para cerrar)", flush=True)
+    if not en_render:                         # abrir el navegador solo tiene sentido en tu PC
+        threading.Timer(0.8, lambda: webbrowser.open(url)).start()
     try:
         servidor.serve_forever()
     except KeyboardInterrupt:
