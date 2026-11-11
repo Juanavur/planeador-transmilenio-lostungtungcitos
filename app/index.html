@@ -73,7 +73,7 @@
   section { display: none; } section.activa { display: block; }
   .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; align-items: start; }
   .bloque { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 20px 22px 22px; min-width: 0;
-           box-shadow: 0 1px 2px rgba(20, 24, 27, .04), 0 8px 24px rgba(20, 24, 27, .05); }
+            box-shadow: 0 1px 2px rgba(20, 24, 27, .04), 0 8px 24px rgba(20, 24, 27, .05); }
   .bloque + .bloque, .rejilla + .bloque, .bloque + .rejilla { margin-top: 16px; }
   .rejilla > .bloque { margin-top: 0; }
   .cabeza { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
@@ -746,7 +746,7 @@ function grafica(series, ejeX, ejeY, W = 520, H = 200) {
 // fondo: mosaicos de OpenStreetMap a zoom 14 unidos en una sola imagen (© colaboradores de OpenStreetMap)
 const FONDO_MAPA = "fondo_mapa.jpg"; // FONDO-MAPA
 const MOSAICO = {z: 14, x0: 4813, y0: 7973, ancho: 2816, alto: 3584};
-const MAPA = {datos: null, ruta: "", viaje: null, sel: null, z: 1, cx: 0, cy: 0, W: 600, H: 860, punteros: new Map(), arrastre: null};
+const MAPA = {datos: null, ruta: "", viaje: null, sel: null, z: 1, cx: 0, cy: 0, W: 600, H: 860, punteros: new Map(), arrastre: null, enfocarPendiente: false};
 
 async function cargarMapa() {
   MAPA.datos = await api("mapa");
@@ -772,6 +772,10 @@ async function cargarMapa() {
   }
   if (!MAPA.cx) reiniciarMapa(false);
   $("mapa-ruta").innerHTML = `<option value="">Todas las rutas</option>` + opciones(d.rutas.map(r => r.ruta), MAPA.ruta);
+  if (MAPA.enfocarPendiente) {
+    MAPA.enfocarPendiente = false;
+    enfocarViajeEnMapa();
+  }
   dibujarMapa(); pintarInfoMapa();
 }
 
@@ -788,21 +792,42 @@ function zoomMapa(f, px, py) {
 }
 
 function tramosDelViaje() {
-  // estaciones por las que pasa el viaje planeado, tramo por tramo
+  // estaciones por las que pasa el viaje planeado, tramo por tramo (soporta ambos sentidos de la ruta)
   if (!MAPA.viaje) return [];
   return MAPA.viaje.map(([ruta, sube, baja]) => {
-    const l = MAPA.recorridos[ruta] || [], i = l.indexOf(sube), j = l.indexOf(baja);
-    return {ruta, paradas: i >= 0 && j > i ? l.slice(i, j + 1) : [sube, baja]};
+    const l = MAPA.recorridos && MAPA.recorridos[ruta] ? MAPA.recorridos[ruta] : [];
+    const i = l.indexOf(sube), j = l.indexOf(baja);
+    let paradas = [sube, baja];
+    if (i >= 0 && j >= 0) {
+      paradas = i <= j ? l.slice(i, j + 1) : l.slice(j, i + 1).reverse();
+    }
+    return {ruta, paradas};
   });
+}
+
+function enfocarViajeEnMapa() {
+  if (!MAPA.pos || !MAPA.viaje || !MAPA.viaje.length) return;
+  const tramos = tramosDelViaje();
+  const paradas = tramos.flatMap(t => t.paradas);
+  const coords = paradas.map(p => MAPA.pos[p]).filter(Boolean);
+  if (!coords.length) return;
+  const xs = coords.map(c => c[0]), ys = coords.map(c => c[1]);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  MAPA.cx = (minX + maxX) / 2;
+  MAPA.cy = (minY + maxY) / 2;
+  const spanX = Math.max(maxX - minX, 35) * 1.45;
+  const spanY = Math.max(maxY - minY, 35) * 1.45;
+  MAPA.z = Math.min(6, Math.max(1.3, Math.min(MAPA.W / spanX, MAPA.H / spanY)));
 }
 
 function dibujarMapa() {
   const d = MAPA.datos; if (!d) return;
   const {z} = MAPA, {vw, vh, r: caja} = vistaMapa();
-  const upp = vw / (caja.width || 600);                                // unidades del mapa por pixel de pantalla
+  const upp = vw / (caja.width || 600);                              // unidades del mapa por pixel de pantalla
   const svg = $("mapa-svg");
   svg.setAttribute("viewBox", `${(MAPA.cx - vw / 2).toFixed(1)} ${(MAPA.cy - vh / 2).toFixed(1)} ${vw.toFixed(1)} ${vh.toFixed(1)}`);
-  const P = MAPA.pos, s = 1 / Math.sqrt(z);                            // marcas un poco más finas al acercar
+  const P = MAPA.pos, s = 1 / Math.sqrt(z);                          // marcas un poco más finas al acercar
   const viaje = tramosDelViaje(), enfoque = MAPA.ruta || viaje.length;
   // tramos únicos de la red: cada par de estaciones seguidas en alguna ruta
   const segs = new Map();
@@ -835,9 +860,15 @@ function dibujarMapa() {
     }
     return true;
   };
-  const linea = (a, b, color, ancho, extra = "") => {
-    const pts = [a, ...intermedias(a, b), b].map(n => P[n][0].toFixed(1) + "," + P[n][1].toFixed(1)).join(" ");
-    return `<polyline points="${pts}" fill="none" stroke="var(--panel)" stroke-width="${ancho + 2.2 * s}" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>` +
+  // dibuja la línea entre dos estaciones; si 'desplazamiento' > 0, corre el trazo paralelamente al lado de las paradas
+  const linea = (a, b, color, ancho, extra = "", desplazamiento = 0) => {
+    const nodos = [a, ...intermedias(a, b), b];
+    const [ax, ay] = P[a], [bx, by] = P[b];
+    const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy) || 1;
+    const ox = desplazamiento ? (-dy / len) * desplazamiento : 0;
+    const oy = desplazamiento ? (dx / len) * desplazamiento : 0;
+    const pts = nodos.map(n => (P[n][0] + ox).toFixed(1) + "," + (P[n][1] + oy).toFixed(1)).join(" ");
+    return `<polyline points="${pts}" fill="none" stroke="var(--panel)" stroke-width="${ancho + 2.4 * s}" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>` +
            `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="${ancho}" stroke-linecap="round" stroke-linejoin="round" ${extra}/>`;
   };
   let g = `<image class="m-fondo" href="${FONDO_MAPA}" x="0" y="0" width="${MAPA.W}" height="${MAPA.H.toFixed(1)}" preserveAspectRatio="none"/>`;
@@ -851,16 +882,22 @@ function dibujarMapa() {
   for (const sg of saltos) if (raiz(sg.a) !== raiz(sg.b)) { padre[raiz(sg.a)] = raiz(sg.b); visibles.push(sg); }
   for (const sg of visibles) {
     const zona = sg.rutas.find(r => /^[A-Z]/.test(r)) || sg.rutas[0];
-    g += linea(sg.a, sg.b, enfoque ? "var(--gris)" : colorRuta(zona), (enfoque ? 2.4 : 3.4) * s, enfoque ? 'opacity=".75"' : "");
+    g += linea(sg.a, sg.b, enfoque ? "var(--gris)" : colorRuta(zona), (enfoque ? 2.4 : 3.4) * s, enfoque ? 'opacity=".55"' : "");
   }
   const destacadas = new Set();
   if (MAPA.ruta) {
     const l = MAPA.recorridos[MAPA.ruta] || [];
-    for (let i = 1; i < l.length; i++) if (P[l[i - 1]] && P[l[i]]) g += linea(l[i - 1], l[i], colorRuta(MAPA.ruta), 6 * s);
+    for (let i = 1; i < l.length; i++) if (P[l[i - 1]] && P[l[i]]) g += linea(l[i - 1], l[i], colorRuta(MAPA.ruta), 6 * s, "", 5.5 * s);
     l.forEach(x => destacadas.add(x));
   }
+  // Dibujar los tramos del viaje planeado con líneas gruesas y desplazadas al lado de las estaciones
   for (const t of viaje) {
-    for (let i = 1; i < t.paradas.length; i++) if (P[t.paradas[i - 1]] && P[t.paradas[i]]) g += linea(t.paradas[i - 1], t.paradas[i], colorRuta(t.ruta), 7 * s);
+    const col = colorRuta(t.ruta);
+    for (let i = 1; i < t.paradas.length; i++) {
+      if (P[t.paradas[i - 1]] && P[t.paradas[i]]) {
+        g += linea(t.paradas[i - 1], t.paradas[i], col, 7 * s, `style="filter: drop-shadow(0 0 ${3 * s}px ${col});"`, 6 * s);
+      }
+    }
     t.paradas.forEach(x => destacadas.add(x));
   }
   // estaciones
@@ -895,7 +932,7 @@ function pintarInfoMapa() {
     html += `<div class="m-viaje"><p class="sentido" style="margin:0 0 6px">Tu viaje en el mapa</p>
       <b>${esc(t[0][1])} → ${esc(t[t.length - 1][2])}</b><span class="suave"> · ${total} paradas</span>
       <div class="rutas-letrero" style="margin-top:8px">${t.map(x => insignia(x[0], true)).join(" ")}</div>
-      <button class="enlace" onclick="MAPA.viaje=null;dibujarMapa();pintarInfoMapa()">Quitar el viaje del mapa</button></div>`;
+      <button class="enlace" onclick="MAPA.viaje=null;reiniciarMapa();pintarInfoMapa()">Quitar el viaje del mapa</button></div>`;
   }
   if (e) {
     html += `<div class="letrero" style="margin-top:${html ? 14 : 0}px"><b>${esc(e.nombre)}</b>
@@ -923,7 +960,11 @@ function usarEnViaje(campo) {
   avisar(campo === "v-origen" ? "Origen: " + MAPA.sel : "Destino: " + MAPA.sel);
   viaje().then(async () => {
     const o = est("v-origen"), d = est("v-destino");
-    if (o && d && o !== d) { const plan = await api("viaje", {origen: o, destino: d}); MAPA.viaje = plan && plan.length ? plan : null; }
+    if (o && d && o !== d) {
+      const plan = await api("viaje", {origen: o, destino: d});
+      MAPA.viaje = plan && plan.length ? plan : null;
+      enfocarViajeEnMapa();
+    }
     dibujarMapa(); pintarInfoMapa();
   });
 }
@@ -931,7 +972,10 @@ async function verViajeEnMapa() {
   const o = est("v-origen"), d = est("v-destino");
   if (!o || !d) return;
   const plan = await api("viaje", {origen: o, destino: d});
-  MAPA.viaje = plan && plan.length ? plan : null; MAPA.sel = null; MAPA.ruta = "";
+  MAPA.viaje = plan && plan.length ? plan : null;
+  MAPA.sel = null;
+  MAPA.ruta = "";
+  MAPA.enfocarPendiente = true;
   document.querySelector('nav button[data-p="mapa"]').click();
 }
 
