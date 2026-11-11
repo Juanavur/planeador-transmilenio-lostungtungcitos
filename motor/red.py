@@ -400,6 +400,7 @@ class Red:
             e = self._crear_estacion(nueva)
         elif creo:
             e.existe = True
+            e.abierta = True
         ref = None if despues_de is None else r.nodos.obtener(despues_de)
         r.nodos.poner(nueva, r.paradas.insertar_despues(ref, nueva))
         e.rutas.poner(r.nombre, r)
@@ -490,7 +491,7 @@ class Red:
     def rutas_de(self, estacion):
         """Nombres de las rutas que paran en la estación (en orden alfabético)."""
         e = self._estaciones.obtener(estacion)
-        if e is None:
+        if e is None or not e.existe:
             return []
         nombres = []
         for r in e.rutas.valores():
