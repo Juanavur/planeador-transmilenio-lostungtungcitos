@@ -241,7 +241,7 @@ class Manejador(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(datos)
 
-        def do_GET(self):
+    def do_GET(self):
         url = urlparse(self.path)
         if url.path in ("/", "/index.html"):
             with open(os.path.join(AQUI, "index.html"), encoding="utf-8") as f:
