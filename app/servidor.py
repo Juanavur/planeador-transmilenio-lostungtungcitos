@@ -65,6 +65,8 @@ def todas():
 def api_info(q):
     return {"estaciones": RED.num_estaciones(), "rutas": RED.nombres_rutas(), "abiertas": todas()}
 
+def api_ping(q):
+    return {"ok": True}
 
 def api_estado(q):
     nombre = limpiar(q.get("nombre", ""))
