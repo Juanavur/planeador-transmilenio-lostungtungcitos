@@ -9,6 +9,7 @@ Este archivo solo traduce peticiones del navegador a llamadas del motor y devuel
 Ninguna regla del sistema vive aquí: todo lo decide motor/.
 """
 
+
 import json
 import os
 import random
@@ -272,7 +273,7 @@ class Manejador(BaseHTTPRequestHandler):
 
 
 def main():
-    puerto = 8501
+    puerto = int(os.environ.get("PORT", 8501))
     while True:
         try:
             servidor = ThreadingHTTPServer(("127.0.0.1", puerto), Manejador)
