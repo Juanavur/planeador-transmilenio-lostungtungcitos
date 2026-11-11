@@ -241,7 +241,7 @@ class Manejador(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(datos)
 
-    def do_GET(self):
+        def do_GET(self):
         url = urlparse(self.path)
         if url.path in ("/", "/index.html"):
             with open(os.path.join(AQUI, "index.html"), encoding="utf-8") as f:
@@ -249,6 +249,9 @@ class Manejador(BaseHTTPRequestHandler):
         if url.path == "/fondo_mapa.jpg":
             with open(os.path.join(AQUI, "fondo_mapa.jpg"), "rb") as f:
                 return self._enviar(200, f.read(), "image/jpeg", "public, max-age=86400")
+        if url.path == "/icono.png":
+            with open(os.path.join(AQUI, "icono.png"), "rb") as f:
+                return self._enviar(200, f.read(), "image/png", "public, max-age=86400")
         if url.path.startswith("/api/"):
             nombre = url.path[5:]
             funcion = RUTAS.get(nombre)
