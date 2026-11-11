@@ -1,11 +1,13 @@
 # Planeador de viajes TransMilenio
 
-Proyecto final de Estructuras de Datos y Algoritmos. Universidad de La Sabana.
+Proyecto final de Estructuras de Datos y Algoritmos. Universidad de La Sabana. Equipo Los Tungtungcitos.
 
 Es una app para buscar estaciones, planear viajes y ver a qué hora pasa el bus, con la red real de TransMilenio (GTFS de julio de 2021). Toda la lógica está en el paquete `motor/`, escrito en Python puro con estructuras propias.
 
 🌐 **Demo en vivo (desplegada en la nube):** [https://planeador-transmilenio-lostungtungcitos.onrender.com/](https://planeador-transmilenio-lostungtungcitos.onrender.com/)  
 *(Nota: al estar en el plan gratuito de Render, si lleva un rato sin usarse puede tardar unos 30–50 segundos en despertar la primera vez que se abre).*
+
+En Render la configuración es: build command `echo "Listo"` y start command `python app/servidor.py`. El servidor detecta la variable `PORT`; cuando existe, escucha en `0.0.0.0` y no abre el navegador. En local sigue usando `127.0.0.1:8501`.
 
 ## Cómo arrancar en local
 
@@ -19,7 +21,7 @@ Ese es el **comando único**. No hay que instalar nada: la app usa solo la libre
 
 Por qué no usamos Streamlit ni pandas en la app: en Windows con *Control inteligente de aplicaciones* activado, esas librerías traen archivos `.dll` sin firmar que el sistema bloquea. Sin dependencias, la app arranca en cualquier computador con Python.
 
-La app tiene siete pestañas: **Viajar** (R4–R6), **Mapa** (la red vista desde arriba, con la posición real de cada estación), **Estaciones** (R1–R3), **Operar la red** (R7–R9), **Fila de abordaje** (R10), **Rendimiento** (R11) y **Datos**, una tabla con las estaciones, las rutas y los horarios que tiene cargados el motor, con búsqueda, orden por columna y descarga en CSV.
+La app tiene siete pestañas: **Viajar** (R4–R6), **Mapa** (la red vista desde arriba, con la posición real de cada estación), **Estaciones** (R1–R3), **Operar la red** (R7–R9), **Hora pico** (R10), **Rendimiento** (R11) y **Datos**, una tabla con las estaciones, las rutas y los horarios que tiene cargados el motor, con búsqueda, orden por columna y descarga en CSV.
 
 Otros comandos útiles:
 
@@ -79,6 +81,7 @@ motor/                      ← todo lo que resuelve requisitos (solo list, str,
 app/                        ← el front (solo llama al motor)
   servidor.py               servidor web con solo librería estándar: traduce peticiones a llamadas del motor
   fondo_mapa.jpg            fondo del mapa (© colaboradores de OpenStreetMap)
+  icono.png                 ícono de la app (pestaña del navegador y vista previa al compartir el link)
   index.html                la página: pestañas, tabla de datos, gráficas SVG y panel de rendimiento (R11)
   herramientas/             generador de redes sintéticas, medición, revisor de prohibidos
   pruebas/                  pruebas del motor con una red pequeña hecha a mano
