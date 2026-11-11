@@ -284,7 +284,7 @@ def main():
             if en_render:
                 raise                         # en Render no cambiamos de puerto
             puerto += 1
-    url = "http://localhost:%d" % puerto
+    url = "https://planeador-transmilenio-lostungtungcitos.onrender.com" % puerto
     print("Red cargada: %d estaciones, %d rutas" % (RED.num_estaciones(), len(RED.nombres_rutas())), flush=True)
     print("App lista en", url, "  (Ctrl + C para cerrar)", flush=True)
     if not en_render:                         # abrir el navegador solo tiene sentido en tu PC
