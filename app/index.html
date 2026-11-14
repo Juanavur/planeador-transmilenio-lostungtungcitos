@@ -50,7 +50,8 @@
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--texto); font: 16px/1.5 var(--f-texto);
-         font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+         font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+         min-height: 100vh; display: flex; flex-direction: column; }
   .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
   /* ---------- barra superior y pestañas */
@@ -70,7 +71,7 @@
   nav button:hover { color: var(--texto); }
   nav button.activo { color: var(--texto); border-bottom-color: var(--rojo); }
 
-  main { max-width: 1040px; margin: 0 auto; padding-block: 22px 64px; }
+  main { max-width: 1040px; width: 100%; margin: 0 auto; padding-block: 22px 40px; flex: 1; }
   section { display: none; } section.activa { display: block; }
   .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; align-items: start; }
   .bloque { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 20px 22px 22px; min-width: 0;
@@ -104,7 +105,8 @@
            background: var(--panel); color: var(--texto); cursor: pointer; }
   button:hover { border-color: var(--linea); }
   button.principal { background: var(--rojo); border-color: var(--rojo); color: var(--sobre-rojo); }
-  button:disabled { opacity: .55; cursor: progress; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  #f-boton:disabled, #m-boton:disabled { cursor: progress; }
   button:focus-visible, input:focus-visible, select:focus-visible, nav button:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
   .suave { color: var(--suave); font-size: 14px; }
   .aviso { padding: 12px 14px; border-radius: 12px; margin-top: 12px; font-size: 15px; }
@@ -139,8 +141,11 @@
   .ruta.mini { min-width: 30px; font-size: 13px; padding: 2px 5px; }
 
   /* ---------- itinerario como diagrama de línea */
-  .resumen-viaje { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-top: 16px; }
+  .resumen-viaje { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
   .resumen-viaje b { font: 800 30px/1 var(--f-titulo); }
+  .badge-viaje { font: 700 13px/1 var(--f-titulo); letter-spacing: .04em; text-transform: uppercase;
+                 color: var(--suave); background: var(--bg); border: 1px solid var(--borde);
+                 padding: 5px 10px; border-radius: 999px; }
   .itinerario { list-style: none; margin: 14px 0 0; padding: 0; }
   .itinerario li { display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; }
   .riel { position: relative; }
@@ -149,8 +154,10 @@
   .parada.cambio .riel::before { border-color: var(--texto); background: var(--panel); width: 22px; height: 22px; left: 2px; top: 2px; }
   .tramo .riel::before { content: ""; position: absolute; left: 10px; top: -2px; bottom: -2px; width: 6px; background: var(--c, var(--letrero)); }
   .parada .txt { padding: 0 0 4px; }
-  .parada .txt b { display: block; font: 800 20px/1.25 var(--f-titulo); letter-spacing: .02em; text-transform: uppercase; }
+  .parada-nom { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .parada .txt b { font: 800 20px/1.25 var(--f-titulo); letter-spacing: .02em; text-transform: uppercase; }
   .parada .txt > span { font-size: 14px; color: var(--suave); }
+  .tm-bus { height: 16px; width: auto; flex: 0 0 auto; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .25)); }
   .tramo .txt { padding: 8px 0 14px; font-size: 14px; color: var(--suave); display: flex; gap: 8px; align-items: center; }
 
   /* ---------- tablero LED */
@@ -244,9 +251,12 @@
   .m-nom.portal { font-weight: 800; }
   .mapa-ctrl { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
   .mapa-ctrl button { width: 42px; height: 42px; min-height: 0; padding: 0; border-radius: 12px; font-size: 20px; line-height: 1;
-                      background: var(--panel); box-shadow: 0 2px 8px rgba(0, 0, 0, .08); }
+                      background: color-mix(in srgb, var(--panel) 86%, transparent); backdrop-filter: blur(6px);
+                      border-color: var(--linea); box-shadow: 0 3px 10px rgba(0, 0, 0, .18); }
+  .mapa-ctrl button:hover { background: var(--panel); border-color: var(--suave); }
   .mapa-norte, #mapa-zoom, #viaje-mapa-zoom { position: absolute; left: 10px; font: 700 12px/1 var(--f-titulo); letter-spacing: .06em; color: var(--suave);
-                            background: var(--panel); padding: 6px 8px; border-radius: 8px; pointer-events: none; }
+                            background: color-mix(in srgb, var(--panel) 86%, transparent); backdrop-filter: blur(6px);
+                            padding: 6px 8px; border-radius: 8px; pointer-events: none; }
   .mapa-norte { top: 10px; } #mapa-zoom, #viaje-mapa-zoom { bottom: 10px; }
   .mapa-osm { position: absolute; right: 0; bottom: 0; font: 500 11px/1 var(--f-texto); color: var(--suave); background: var(--panel);
               padding: 5px 8px; border-top-left-radius: 8px; text-decoration: none; opacity: .92; }
@@ -261,6 +271,20 @@
   button.enlace { background: none; border: 0; padding: 0; min-height: 0; color: var(--azul); font: inherit; cursor: pointer; text-align: left; }
   .m-viaje button.enlace { margin-top: 10px; font-size: 14px; }
   button.sin-borde { background: none; border: 0; padding: 0; min-height: 0; border-radius: 6px; }
+
+  /* ---------- pie de página institucional */
+  .pie { background: var(--panel); border-top: 1px solid var(--borde); color: var(--suave); font-size: 13px; margin-top: auto; }
+  .pie-in { max-width: 1040px; margin: 0 auto; padding-block: 18px 22px; display: flex; justify-content: space-between;
+            align-items: center; gap: 14px 24px; flex-wrap: wrap; }
+  .pie-col { display: flex; flex-direction: column; gap: 3px; }
+  .pie-col b { color: var(--texto); font-weight: 600; }
+  .pie-marca { display: flex; align-items: center; gap: 8px; }
+  .pie-marca b { font: 800 16px/1.1 var(--f-titulo); letter-spacing: .02em; text-transform: uppercase; }
+  .pie-punto { width: 8px; height: 8px; border-radius: 50%; background: var(--rojo); flex: 0 0 8px; }
+  .pie-inst { align-items: flex-end; text-align: right; }
+  .pie-uni { font: 700 13px/1 var(--f-titulo); letter-spacing: .04em; text-transform: uppercase; color: var(--texto);
+             background: var(--bg); border: 1px solid var(--borde); padding: 5px 10px; border-radius: 6px; }
+  @media (max-width: 760px) { .pie-inst { align-items: flex-start; text-align: left; } }
   /*CSS-WEB*/
   @media (max-width: 560px) {
     .ida-vuelta { grid-template-columns: minmax(0, 1fr) auto; } .ida-vuelta label:last-of-type { grid-column: 1 / -1; }
@@ -375,7 +399,7 @@
         <div class="cabeza"><h2>Próximo bus</h2><span class="req">R4</span></div>
         <div class="fila">
           <label for="p-estacion">Estoy en<input id="p-estacion" list="lista-estaciones" autocomplete="off" placeholder="Ej: Calle 26"></label>
-          <label for="p-ruta" style="flex:0 1 120px">Espero la<select id="p-ruta"></select></label>
+          <label for="p-ruta" style="flex:0 1 135px">Ruta / Servicio<select id="p-ruta"></select></label>
           <div class="con-boton" style="flex:0 1 200px"><label for="p-hora">A las<input id="p-hora" type="time" value="07:00"></label>
             <button onclick="horaActual()" title="Usar la hora de ahora">Ahora</button></div>
         </div>
@@ -502,6 +526,26 @@
   </section>
 </main>
 
+<footer class="pie">
+  <div class="pie-in gutter">
+    <div class="pie-col">
+      <div class="pie-marca">
+        <span class="pie-punto" aria-hidden="true"></span>
+        <b>Planeador TransMilenio · Red Troncal</b>
+      </div>
+      <span>124 estaciones · 89 rutas · Datos reales GTFS (julio 2021)</span>
+    </div>
+    <div class="pie-col" style="flex:1 1 380px; min-width:0">
+      <span><b>Proyecto final:</b> Estructuras de Datos y Algoritmos</span>
+      <span><b>Integrantes:</b> Santiago Caicedo Ramirez (Ingeniería Informática), Juan Camilo Avellaneda Urrego (Ingeniería Informática), David Eduardo Diaz Arciniegas (Ingeniería Informática), Juan Felipe Camacho Landazabal (Ingeniería Informática)</span>
+    </div>
+    <div class="pie-col pie-inst">
+      <span class="pie-uni">Universidad de La Sabana</span>
+      <span>Facultad de Ingeniería · 2026</span>
+    </div>
+  </div>
+</footer>
+
 <!--SCRIPTS-WEB-->
 <script>
 const $ = id => document.getElementById(id);
@@ -579,6 +623,22 @@ const ZONAS = {A: "#1f5fae", B: "#2e7d32", C: "#d9730d", D: "#6a3fa0", E: "#b017
                H: "#a8550a", J: "#7a6233", K: "#4f6170", L: "#00796b", M: "#37474f"};
 const colorRuta = r => ZONAS[String(r).charAt(0).toUpperCase()] || "#2b2f33";
 const insignia = (r, mini) => `<span class="ruta${mini ? " mini" : ""}" style="--c:${colorRuta(r)}">${esc(r)}</span>`;
+const iconoTM = `<svg class="tm-bus" viewBox="0 0 38 16" aria-hidden="true">
+  <rect x="1" y="2" width="15" height="10.5" rx="2" fill="#c8102e"/>
+  <rect x="16" y="2.6" width="3" height="9.4" fill="#2b3035"/>
+  <line x1="17.5" y1="2.6" x2="17.5" y2="12" stroke="#15181b" stroke-width="0.7"/>
+  <path d="M19 2 H33.5 C35 2 36.2 3.2 36.5 5 L37 9.5 C37 11.2 35.8 12.5 34.2 12.5 H19 Z" fill="#c8102e"/>
+  <rect x="1" y="7.6" width="35.6" height="1.1" fill="#ffffff" opacity="0.85"/>
+  <rect x="3" y="3.5" width="3.4" height="3.2" rx="0.6" fill="#dce8ef"/>
+  <rect x="7.4" y="3.5" width="3.4" height="3.2" rx="0.6" fill="#dce8ef"/>
+  <rect x="11.8" y="3.5" width="3" height="3.2" rx="0.6" fill="#dce8ef"/>
+  <rect x="20.5" y="3.5" width="3.4" height="3.2" rx="0.6" fill="#dce8ef"/>
+  <rect x="24.9" y="3.5" width="3.4" height="3.2" rx="0.6" fill="#dce8ef"/>
+  <path d="M29.6 3.5 H33.4 C34.2 3.5 34.8 4.1 35 5 L35.3 6.7 H29.6 Z" fill="#dce8ef"/>
+  <circle cx="6.5" cy="13.2" r="2.1" fill="#181b1e" stroke="#ffffff" stroke-width="0.6"/><circle cx="6.5" cy="13.2" r="0.7" fill="#9ba3a0"/>
+  <circle cx="22.5" cy="13.2" r="2.1" fill="#181b1e" stroke="#ffffff" stroke-width="0.6"/><circle cx="22.5" cy="13.2" r="0.7" fill="#9ba3a0"/>
+  <circle cx="31.5" cy="13.2" r="2.1" fill="#181b1e" stroke="#ffffff" stroke-width="0.6"/><circle cx="31.5" cy="13.2" r="0.7" fill="#9ba3a0"/>
+</svg>`;
 
 // ---------- pestañas
 document.querySelectorAll("#pestanas button").forEach(b => b.onclick = () => {
@@ -612,7 +672,7 @@ async function buscar() {
   if (!e.existe) $("b-estado").innerHTML = sug.length
       ? `<p class="suave" style="margin:14px 0 0">¿Cuál de estas? Toca una para ver su letrero.</p>`
       : `<div class="aviso mal">No encontramos ninguna estación que empiece por «${esc(e.nombre)}». Revisa cómo se escribe.</div>`;
-  else $("b-estado").innerHTML = `<div class="letrero"><b>${esc(e.nombre)}</b>
+  else $("b-estado").innerHTML = `<div class="letrero"><div class="parada-nom"><b>${esc(e.nombre)}</b>${iconoTM}</div>
       <span class="estado ${e.abierta ? "abierta" : "cerrada"}">${e.abierta ? "Abierta" : "Cerrada"}</span>
       <small>${e.buses.toLocaleString("es-CO")} buses al día · ${e.rutas.length} rutas</small>
       <div class="rutas-letrero">${e.rutas.map(r => insignia(r, true)).join("")}</div></div>`;
@@ -657,13 +717,13 @@ async function viaje() {
   let pasos = "";
   plan.forEach(([ruta, sube, baja, p], i) => {
     const c = colorRuta(ruta);
-    pasos += `<li class="parada${i > 0 ? " cambio" : ""}" style="--c:${c}"><span class="riel"></span><div class="txt"><b>${esc(sube)}</b>
+    pasos += `<li class="parada${i > 0 ? " cambio" : ""}" style="--c:${c}"><span class="riel"></span><div class="txt"><div class="parada-nom"><b>${esc(sube)}</b>${iconoTM}</div>
                 <span>${i === 0 ? "Sube a la" : "Cambia a la"} ${insignia(ruta, true)}</span></div></li>
               <li class="tramo" style="--c:${c}"><span class="riel"></span><div class="txt">${insignia(ruta, true)} ${p} parada${p === 1 ? "" : "s"}</div></li>`;
-    if (i === plan.length - 1) pasos += `<li class="parada" style="--c:${c}"><span class="riel"></span><div class="txt"><b>${esc(baja)}</b><span>Llegaste</span></div></li>`;
+    if (i === plan.length - 1) pasos += `<li class="parada" style="--c:${c}"><span class="riel"></span><div class="txt"><div class="parada-nom"><b>${esc(baja)}</b>${iconoTM}</div><span>Llegaste</span></div></li>`;
   });
   $("v-plan").innerHTML = `<div class="resumen-viaje"><b>${total} parada${total === 1 ? "" : "s"}</b>
-      <span class="suave">${plan.length === 1 ? "Viaje directo" : "Un transbordo en " + esc(plan[0][2])}</span></div>
+      <span class="badge-viaje">${plan.length === 1 ? "Viaje directo" : "1 transbordo · " + esc(plan[0][2])}</span></div>
     <ol class="itinerario">${pasos}</ol>
     <button class="enlace" style="margin-top:6px" onclick="verViajeEnMapa()">Ver este viaje en el mapa →</button>`;
   if (MAPA.datos) {
@@ -905,8 +965,8 @@ function enfocarViajeEnMapa() {
   const minY = Math.min(...ys), maxY = Math.max(...ys);
   MAPA.cx = (minX + maxX) / 2;
   MAPA.cy = (minY + maxY) / 2;
-  const spanX = Math.max(maxX - minX, 40) * 1.6;
-  const spanY = Math.max(maxY - minY, 40) * 1.6;
+  const spanX = Math.max(maxX - minX, 40) * 1.85;
+  const spanY = Math.max(maxY - minY, 40) * 1.85;
   MAPA.z = Math.min(5.5, Math.max(1.4, Math.min(MAPA.W / spanX, MAPA.H / spanY)));
 }
 
@@ -1006,7 +1066,10 @@ function dibujarMapa() {
       const conNombre = viaje.length ? (extremos.has(e.nombre) || sel || z >= 2.2) : (portal || sel || extremos.has(e.nombre) || (enfoque && dest) || z >= 3);
       if (conNombre) {
         const t = upp, fs = (portal || extremos.has(e.nombre) ? 12.5 : 11) * t;
-        g += `<text class="m-nom${portal ? " portal" : ""}" x="${(x + r + 3 * t).toFixed(2)}" y="${(y + fs * 0.35).toFixed(2)}" style="font-size:${fs.toFixed(3)}px"
+        const aLaIzquierda = x > MAPA.cx + vw * 0.16;
+        const tx = aLaIzquierda ? (x - r - 4 * t) : (x + r + 3 * t);
+        const anchor = aLaIzquierda ? ' text-anchor="end"' : "";
+        g += `<text class="m-nom${portal ? " portal" : ""}" x="${tx.toFixed(2)}" y="${(y + fs * 0.35).toFixed(2)}"${anchor} style="font-size:${fs.toFixed(3)}px"
                stroke="var(--panel)" stroke-width="${(3 * t).toFixed(3)}" paint-order="stroke">${esc(e.nombre)}</text>`;
       }
     }
