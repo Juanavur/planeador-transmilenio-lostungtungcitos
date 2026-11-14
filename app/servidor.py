@@ -97,7 +97,15 @@ def api_proximo_bus(q):
 
 
 def api_viaje(q):
-    return RED.viaje(q.get("origen", ""), q.get("destino", ""))                    # R5
+    tramos = RED.viaje(q.get("origen", ""), q.get("destino", ""))          # R5
+    if not tramos:
+        return tramos
+    res = []
+    for ruta, sube, baja in tramos:
+        rec = RED.recorrido(ruta)
+        paradas = rec.index(baja) - rec.index(sube)
+        res.append([ruta, sube, baja, paradas])
+    return res
 
 
 def api_ranking(q):
