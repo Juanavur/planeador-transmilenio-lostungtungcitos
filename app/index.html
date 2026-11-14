@@ -958,9 +958,11 @@ function dibujarMapa() {
   for (const sg of visibles) padre[raiz(sg.a)] = raiz(sg.b);
   saltos.sort((x, y) => Math.hypot(P[x.a][0] - P[x.b][0], P[x.a][1] - P[x.b][1]) - Math.hypot(P[y.a][0] - P[y.b][0], P[y.a][1] - P[y.b][1]));
   for (const sg of saltos) if (raiz(sg.a) !== raiz(sg.b)) { padre[raiz(sg.a)] = raiz(sg.b); visibles.push(sg); }
-  for (const sg of visibles) {
-    const zona = sg.rutas.find(r => /^[A-Z]/.test(r)) || sg.rutas[0];
-    gBase += linea(sg.a, sg.b, enfoque ? "var(--gris)" : colorRuta(zona), (enfoque ? 2.4 : 3.4) * s, enfoque ? 'opacity=".5"' : "");
+  if (!viaje.length) {
+    for (const sg of visibles) {
+      const zona = sg.rutas.find(r => /^[A-Z]/.test(r)) || sg.rutas[0];
+      gBase += linea(sg.a, sg.b, enfoque ? "var(--gris)" : colorRuta(zona), (enfoque ? 2.4 : 3.4) * s, enfoque ? 'opacity=".5"' : "");
+    }
   }
   const destacadas = new Set();
   if (MAPA.ruta) {
@@ -968,12 +970,12 @@ function dibujarMapa() {
     for (let i = 1; i < l.length; i++) if (P[l[i - 1]] && P[l[i]]) gBase += linea(l[i - 1], l[i], colorRuta(MAPA.ruta), 6 * s, "", 5.5 * s);
     l.forEach(x => destacadas.add(x));
   }
-  // Dibujar los tramos del viaje planeado desplazados al lado de las paradas con resplandor
+  // Dibujar solo los tramos del viaje planeado centrados sobre las paradas
   for (const t of viaje) {
     const col = colorRuta(t.ruta);
     for (let i = 1; i < t.paradas.length; i++) {
       if (P[t.paradas[i - 1]] && P[t.paradas[i]]) {
-        gBase += linea(t.paradas[i - 1], t.paradas[i], col, 7 * s, `style="filter: drop-shadow(0 0 ${3 * s}px ${col});"`, 6 * s);
+        gBase += linea(t.paradas[i - 1], t.paradas[i], col, 6.5 * s, `style="filter: drop-shadow(0 0 ${3 * s}px ${col});"`, 0);
       }
     }
     t.paradas.forEach(x => destacadas.add(x));
@@ -992,13 +994,14 @@ function dibujarMapa() {
     let g = gBase;
     for (const e of d.estaciones) {
       if (!P[e.nombre]) continue;
+      if (viaje.length && !destacadas.has(e.nombre)) continue;
       const [x, y] = P[e.nombre], portal = e.nombre.startsWith("PORTAL"), dest = destacadas.has(e.nombre), sel = MAPA.sel === e.nombre;
       const r = (portal ? 6 : 4) * s * (dest || sel ? 1.25 : 1) * (extremos.has(e.nombre) ? 1.35 : 1);
       const borde = !e.abierta ? "var(--ambar)" : sel ? "var(--azul)" : dest ? "var(--texto)" : "var(--texto)";
       const relleno = extremos.has(e.nombre) ? "var(--texto)" : "var(--panel)";
       g += `<circle class="m-est" data-n="${esc(e.nombre)}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}" fill="${relleno}" stroke="${borde}"
              stroke-width="${(sel ? 3 : 1.8) * s}" ${e.abierta ? "" : `stroke-dasharray="${2 * s} ${1.5 * s}"`}><title>${esc(e.nombre)}</title></circle>`;
-      const conNombre = portal || sel || extremos.has(e.nombre) || (enfoque && dest) || z >= 3;
+      const conNombre = viaje.length ? (extremos.has(e.nombre) || sel || z >= 2.2) : (portal || sel || extremos.has(e.nombre) || (enfoque && dest) || z >= 3);
       if (conNombre) {
         const t = upp, fs = (portal || extremos.has(e.nombre) ? 12.5 : 11) * t;
         g += `<text class="m-nom${portal ? " portal" : ""}" x="${(x + r + 3 * t).toFixed(2)}" y="${(y + fs * 0.35).toFixed(2)}" style="font-size:${fs.toFixed(3)}px"
@@ -1012,7 +1015,6 @@ function dibujarMapa() {
   if ($("mapa-zoom")) $("mapa-zoom").textContent = txtZoom;
   if ($("viaje-mapa-zoom")) $("viaje-mapa-zoom").textContent = txtZoom;
 }
-
 function pintarInfoMapa() {
   const e = MAPA.sel && MAPA.porNombre ? MAPA.porNombre[MAPA.sel] : null;
   let html = "";
