@@ -9,7 +9,6 @@ Este archivo solo traduce peticiones del navegador a llamadas del motor y devuel
 Ninguna regla del sistema vive aquí: todo lo decide motor/.
 """
 
-
 import json
 import math
 import os
@@ -66,12 +65,16 @@ def todas():
 def api_info(q):
     return {"estaciones": RED.num_estaciones(), "rutas": RED.nombres_rutas(), "abiertas": todas()}
 
+
 def api_ping(q):
     return {"ok": True}
 
+
 def api_estado(q):
     nombre = limpiar(q.get("nombre", ""))
-    existe, abierta = RED.estado(nombre)                                       # R1
+    estado = RED.estado(nombre)                                         # R1
+    existe = estado != "NO EXISTE"
+    abierta = estado == "ABIERTA"
     return {"nombre": nombre, "existe": existe, "abierta": abierta,
             "rutas": RED.rutas_de(nombre) if existe else [],
             "buses": RED.buses_al_dia(nombre)}
@@ -99,7 +102,7 @@ def api_viaje(q):
 
 def api_ranking(q):
     top = RED.ranking(int(q.get("k", 10)))                                         # R6
-    return [{"nombre": e, "buses": RED.buses_al_dia(e)} for e in top]
+    return [{"nombre": nombre, "buses": buses} for nombre, buses in top]
 
 
 def api_recorrido(q):
@@ -113,7 +116,7 @@ def api_agregar_parada(q):
 
 
 def api_quitar_parada(q):
-    return RED.quitar_parada(q.get("ruta", ""), q.get("estacion", ""))            # R7
+    return RED.quitar_parada(q.get("ruta", ""), q.get("estacion", ""))             # R7
 
 
 def api_cerrar(q):
@@ -154,7 +157,8 @@ def api_fila(q):
         rnd = random.Random(0)
         # Cuantiles exactos o muestra aleatoria ordenada de la distribución triangular
         llegadas = sorted(rnd.triangular(0, ventana, ventana / 2) for _ in range(p_sim))
-        esperas = simular_fila(llegadas, frecuencia, cap_sim)                      # R10
+        salidas = simular_fila(llegadas, frecuencia, cap_sim)                      # R10
+        esperas = [max(0.0, s - t) for t, s in zip(llegadas, salidas)]
         paso_min = max(1.0, ventana / TOPE_PUNTOS_CURVA)
         suma, cuenta = {}, {}
         for t, e in zip(llegadas, esperas):
@@ -187,7 +191,8 @@ def api_fila(q):
     # Equivale a que 1 unidad de capacidad en la muestra = (capacidad * n_muestra / pasajeros)
     # Para usar simular_fila() con capacidad entera = 1, escalamos la frecuencia efectiva:
     frec_efectiva = frecuencia * (pasajeros / (n_muestra * capacidad))
-    esperas = simular_fila(llegadas_norm, frec_efectiva, 1)                        # R10
+    salidas = simular_fila(llegadas_norm, frec_efectiva, 1)                        # R10
+    esperas = [max(0.0, s - t) for t, s in zip(llegadas_norm, salidas)]
 
     paso_min = max(1.0, ventana / min(TOPE_PUNTOS_CURVA, int(ventana) or 1))
     suma, cuenta = {}, {}
