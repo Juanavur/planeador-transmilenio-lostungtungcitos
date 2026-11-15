@@ -178,10 +178,13 @@ class Red:
 
     # ===================================================================== R1
     def estado(self, nombre):
+        """R1. Devuelve (existe, abierta).  O(1) promedio: una consulta a la tabla hash.
+        Se escogió tabla hash y no búsqueda binaria/AVL (O(log n)) porque es la
+        consulta más frecuente de la app."""
         e = self._estaciones.obtener(nombre)
         if e is None or not e.existe:
-            return "NO EXISTE"
-        return "ABIERTA" if e.abierta else "CERRADA"
+            return (False, False)
+        return (True, e.abierta)
 
     # ===================================================================== R2
     def autocompletar(self, prefijo, k):
@@ -234,7 +237,7 @@ class Red:
             return None
         i = primer_mayor_igual(arr, minutos)
         if i == len(arr):
-            return None
+            i = 0                                   # se pasa al día siguiente
         return a_texto(arr[i])
 
     # ===================================================================== R5
@@ -305,8 +308,8 @@ class Red:
         if mejor is None:
             return None
         if mejor[1] == 1:
-            return [(mejor[2], origen, destino)]
-        return [(mejor[2], origen, mejor[4]), (mejor[3], mejor[4], destino)]
+            return [(mejor[2], origen, destino, mejor[5])]
+        return [(mejor[2], origen, mejor[4], mejor[5]), (mejor[3], mejor[4], destino, mejor[6])]
 
     @staticmethod
     def _mejor_que(a, b):
@@ -333,7 +336,7 @@ class Red:
             self._reconstruir_ranking()
         for e in self._ranking:
             if e.visible():
-                res.append((e.nombre, e.buses))
+                res.append(e.nombre)
                 if len(res) == k:
                     break
         return res
@@ -384,18 +387,19 @@ class Red:
         return True
 
     def recorrido(self, ruta, al_reves=False):
+        """R7. Lista de estaciones de la ruta, en su sentido o al revés.
+        O(m): se recorre la lista doble por `sig` o por `ant`. None si no existe."""
         r = self._rutas.obtener(ruta)
         if r is None:
-            return []
+            return None
         return r.paradas.a_lista(al_reves)
-      
+
     def _hacer_agregar(self, r, nueva, despues_de, creo):
         e = self._estaciones.obtener(nueva)
         if e is None:
             e = self._crear_estacion(nueva)
         elif creo:
             e.existe = True
-            e.abierta = True
         ref = None if despues_de is None else r.nodos.obtener(despues_de)
         r.nodos.poner(nueva, r.paradas.insertar_despues(ref, nueva))
         e.rutas.poner(r.nombre, r)
@@ -486,7 +490,7 @@ class Red:
     def rutas_de(self, estacion):
         """Nombres de las rutas que paran en la estación (en orden alfabético)."""
         e = self._estaciones.obtener(estacion)
-        if e is None or not e.existe:
+        if e is None:
             return []
         nombres = []
         for r in e.rutas.valores():
