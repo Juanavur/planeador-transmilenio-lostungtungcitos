@@ -32,6 +32,7 @@ Otros comandos útiles:
 python -m unittest discover -s app/pruebas -v            # pruebas del motor
 python app/herramientas/revisar_prohibidos.py            # verifica que motor/ no use nada prohibido
 python app/herramientas/medir.py 1000 2000 4000 8000     # rendimiento por consola (lo mismo que el panel)
+python app/herramientas/pendientes.py 10000 20000 40000 80000   # medianas y pendientes con los tamaños de la rúbrica (~2 min)
 python datos/convertir_gtfs.py gtfs.zip                  # regenerar los CSV desde el GTFS (necesita pandas)
 ```
 
@@ -192,7 +193,36 @@ integrantes.md              quién hizo qué requisito
 
 La pestaña **📈 Rendimiento** de la app genera redes sintéticas de tamaño $n$, $2n$, $4n$, … (`app/herramientas/generar_red.py`), corre cada operación cientos de veces y grafica el tiempo medido junto a la curva esperada (anclada en el punto más grande). Al lado compara la última duplicación, de $n$ a $2n$, que es el mismo método del script del profesor, y dice si coincide, con la explicación.
 
-Mediciones de referencia, en microsegundos por llamada, con $n$ de 2 000 a 32 000:
+### Mediciones con los tamaños de la rúbrica (10 000 a 80 000 estaciones)
+
+El panel limita $n$ a 32 000, así que las redes de 10 000, 20 000, 40 000 y 80 000 estaciones se midieron con `app/herramientas/pendientes.py` (Python 3.13, máquina Linux de 2 núcleos). Cada celda es la **mediana** de 150 a 2 000 llamadas individuales con consultas al azar distintas en cada llamada, que es el caso más desfavorable para la memoria caché (R10: mediana de 3 repeticiones). Todo va en microsegundos por llamada, salvo la carga, que va en segundos. La **pendiente** es la inclinación de la recta $\log(\text{tiempo})$ contra $\log(n)$ en las cuatro redes: 0 es constante y 1 es lineal.
+
+| Operación | Esperado | n=10 000 | n=20 000 | n=40 000 | n=80 000 | Pendiente | Comentario |
+|---|---|---|---|---|---|---|---|
+| Carga `Red(carpeta)` (s) | $O(n \log n)$ | 1.11 | 2.23 | 4.95 | 10.56 | 1.09 | Solo se mide cuánto tarda. Los horarios son casi todo el archivo |
+| R1 estado | $O(1)$ | 1.16 | 1.72 | 2.35 | 2.64 | 0.40 | La tabla hash se redimensiona (factor de carga ≤ 0.75), así que no es lineal. La subida es de caché: cada consulta al azar toca una cubeta distinta |
+| R2 autocompletar k=10, prefijo de 1 letra | $O(\log n + k)$ | 2.24 | 2.21 | 2.30 | 2.57 | 0.07 | Sí. Siempre hay más de $k$ coincidencias |
+| R2 autocompletar k=10, prefijo de 3 letras | $O(\log n + k)$ | 1.33 | 1.91 | 2.90 | 4.47 | 0.58 | La consulta típica tiene menos de $k$ coincidencias (mediana de 2 en 10 000 y de 5 en 80 000), y una red más grande tiene más estaciones por prefijo. Crece el tamaño de la respuesta, no la búsqueda |
+| R3 rango (~11 resultados) | $O(\log n + m)$ | 2.88 | 3.69 | 6.51 | 8.15 | 0.53 | $m$ es fijo. El $\log n$ solo sube un 22 % entre 10 000 y 80 000; el resto es, muy probablemente, memoria caché (un AVL grande no cabe en ella) |
+| R4 próximo bus | $O(\log h)$ | 6.61 | 8.14 | 11.56 | 12.14 | 0.31 | $h$ no crece con $n$; la variación es de caché |
+| R6 ranking k=10, sin cambios | $O(k)$ | 0.84 | 0.88 | 0.87 | 0.87 | 0.02 | Sí |
+| R6 ranking k=10, con 200 cerradas en la cima | $O(k + c)$ | 6.17 | 6.20 | 6.15 | 6.14 | 0.00 | Sí. Depende de $c$, no de $n$ |
+| R6 ranking k=10, justo después de editar una ruta | $O(n \log n)$ | 20 909 | 50 090 | 178 072 | 448 729 | 1.51 | Es la reconstrucción del ranking que se documenta en R6. Solo pasa en la primera consulta después de `agregar_parada` o `quitar_parada`; cerrar y reabrir nunca la provocan |
+| R7 agregar_parada | $O(1)$ | 14.78 | 16.12 | 18.96 | 19.73 | 0.15 | Sí |
+| R7 quitar_parada | $O(1)$ | 6.36 | 7.26 | 8.95 | 9.10 | 0.19 | Sí |
+| R7 recorrido | $O(m)$ | 1.90 | 2.23 | 2.98 | 4.12 | 0.38 | $m$ (paradas por ruta) no crece con $n$; la variación es de caché |
+| R8 cerrar | $O(1)$ | 1.42 | 1.60 | 2.26 | 2.51 | 0.30 | Sí |
+| R8 reabrir | $O(1)$ | 1.26 | 1.37 | 1.97 | 2.01 | 0.25 | Sí |
+| R9 deshacer (historial largo) | $O(1)$ | 1.29 | 1.29 | 1.39 | 1.35 | 0.03 | Sí |
+| R9 rehacer (historial largo) | $O(1)$ | 1.28 | 1.28 | 1.38 | 1.44 | 0.06 | Sí |
+| R10 fila, $P = 10n$, llegadas ordenadas | $O(P)$ | 42 978 | 91 872 | 185 965 | 396 101 | 1.06 | Sí. Al duplicar $P$ el tiempo se duplica |
+| R10 fila, $P = 10n$, llegadas desordenadas | $O(P \log P)$ | 275 465 | 827 864 | 1 930 910 | 6 320 747 | 1.48 | Incluye el merge sort. La pendiente teórica de $n \log n$ en este rango ronda 1.1; el resto es acceso aleatorio a memoria (con el recolector de basura desactivado casi no cambia) |
+
+R5 no se incluye, porque no entra en la medición de eficiencia.
+
+### Mediciones del panel (2 000 a 32 000 estaciones)
+
+Promedios de cientos de llamadas, en microsegundos por llamada, con $n$ de 2 000 a 32 000:
 
 | Operación | Esperado | n=2000 | n=8000 | n=32000 | ¿Coincide? |
 |---|---|---|---|---|---|
