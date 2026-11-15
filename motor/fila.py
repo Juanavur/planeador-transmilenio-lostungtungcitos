@@ -2,11 +2,11 @@
 R10. Fila de abordaje en hora pico.
 
 simular_fila(llegadas, frecuencia, capacidad)
-    llegadas   : lista con el segundo en que llega cada pasajero
-    frecuencia : cada cuánto sale un bus (los buses salen en f, 2f, 3f, ...)
+    llegadas   : lista con el minuto (o segundo, la unidad da igual) en que llega cada pasajero
+    frecuencia : cada cuánto sale un bus (los buses salen en 0, f, 2f, 3f, ...)
     capacidad  : cuántos pasajeros caben en cada bus
-Devuelve una lista `salidas` del mismo tamaño que `llegadas`:
-    salidas[i] = segundo en que salió el bus al que subió el pasajero i.
+Devuelve una lista `esperas` del mismo tamaño que `llegadas`:
+    esperas[i] = cuánto esperó el pasajero i desde que llegó hasta que subió.
 
 Reglas:
   - Suben en orden de llegada (FIFO). Si dos llegan al mismo tiempo, primero el que
@@ -30,11 +30,11 @@ def simular_fila(llegadas, frecuencia, capacidad):
     if frecuencia <= 0 or capacidad <= 0:
         raise ValueError("frecuencia y capacidad deben ser positivas")
     p = len(llegadas)
-    salidas = [0] * p
+    esperas = [0] * p
     if p == 0:
-        return salidas
+        return esperas
 
-    # orden de llegada (índices); si ya viene ordenada no cuesta O(P log P)
+    # orden de llegada (índices); casi siempre ya viene ordenada y no cuesta nada
     if esta_ordenado(llegadas, lambda a, b: a < b):
         orden = None
     else:
@@ -43,29 +43,27 @@ def simular_fila(llegadas, frecuencia, capacidad):
     cola = Cola()
     siguiente = 0          # próximo pasajero (en orden de llegada) que aún no está en la fila
     abordados = 0
-    t = frecuencia         # los buses salen en frecuencia, 2*frecuencia, ...
+    t = 0                  # hora de salida del bus actual
     while abordados < p:
         if cola.vacia():
-            # nadie esperando: saltar al primer bus (>= frecuencia) en o después de la próxima llegada
+            # nadie esperando: saltar al primer bus en o después de la próxima llegada
             a = llegadas[siguiente if orden is None else orden[siguiente]]
-            q = int(a // frecuencia)
-            if q * frecuencia < a - 1e-12:
+            q = a // frecuencia
+            if q * frecuencia < a:
                 q += 1
-            if q < 1:
-                q = 1
             if q * frecuencia > t:
                 t = q * frecuencia
         while siguiente < p:
             idx = siguiente if orden is None else orden[siguiente]
-            if llegadas[idx] > t + 1e-12:
+            if llegadas[idx] > t:
                 break
             cola.encolar(idx)
             siguiente += 1
         suben = 0
         while suben < capacidad and not cola.vacia():
             idx = cola.desencolar()
-            salidas[idx] = t
+            esperas[idx] = t - llegadas[idx]
             suben += 1
         abordados += suben
         t += frecuencia
-    return salidas
+    return esperas
