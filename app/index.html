@@ -84,32 +84,35 @@
   .skeleton-table { min-height: 180px; }
   @keyframes wire-shimmer { to { transform: translateX(100%); } }
 
-  /* ---------- portada minimalista en Viajar con fotos reales */
+  /* ---------- portada de Viajar: texto centrado y una foto a cada lado */
   .portada-mini { position: relative; isolation: isolate; overflow: hidden; margin-bottom: 16px;
-    background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 16px 20px;
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: 18px; align-items: center;
+    background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 18px 20px;
+    display: grid; grid-template-columns: minmax(130px, 220px) minmax(0, 1fr) minmax(130px, 220px); gap: 20px; align-items: center;
     box-shadow: 0 1px 2px rgba(20, 24, 27, .04), 0 8px 24px rgba(20, 24, 27, .05); }
   .portada-mini::before { content: ""; position: absolute; z-index: -1; inset: 0; opacity: .07; pointer-events: none;
     background: url("/fondo_mapa.jpg") center 48% / cover no-repeat; filter: grayscale(1); }
-  .portada-mini-txt { display: flex; flex-direction: column; gap: 4px; }
-  .portada-mini-kicker { display: inline-flex; align-items: center; gap: 8px; font: 700 11px/1 var(--f-titulo);
+  .portada-mini-txt { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  .portada-mini-kicker { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 700 11px/1 var(--f-titulo);
     letter-spacing: .12em; text-transform: uppercase; color: var(--rojo); }
   .portada-mini-kicker span { color: var(--suave); }
-  .portada-mini h1 { margin: 2px 0; font: 800 clamp(26px, 3.2vw, 36px)/.96 var(--f-titulo);
-    letter-spacing: -.01em; text-transform: uppercase; color: var(--texto); }
-  .portada-mini p { margin: 0; font-size: 13.5px; color: var(--suave); max-width: 52ch; }
-  .portada-mini-fotos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; height: 86px; }
-  .portada-mini-fotos figure { position: relative; margin: 0; border-radius: 10px; overflow: hidden;
-    border: 1px solid var(--borde); background: var(--bg); height: 100%; }
-  .portada-mini-fotos img { width: 100%; height: 100%; object-fit: cover; display: block;
+  .portada-mini h1 { margin: 2px 0; font: 800 clamp(26px, 3.2vw, 38px)/.96 var(--f-titulo);
+    letter-spacing: -.01em; text-transform: uppercase; color: var(--texto); text-wrap: balance; }
+  .portada-mini p { margin: 0 auto; font-size: 14px; color: var(--suave); max-width: 46ch; }
+  .portada-foto { position: relative; margin: 0; height: 120px; border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--borde); background: var(--bg); }
+  .portada-foto img { width: 100%; height: 100%; object-fit: cover; display: block;
     filter: grayscale(1) contrast(1.08); transition: filter .25s ease, transform .25s ease; }
-  .portada-mini-fotos figure:hover img { filter: grayscale(.15) contrast(1.05); transform: scale(1.03); }
-  .portada-mini-fotos figcaption { position: absolute; inset: auto 0 0 0; padding: 12px 6px 4px;
-    font: 700 9.5px/1 var(--f-titulo); letter-spacing: .06em; text-transform: uppercase; color: #fff;
+  .portada-foto:hover img { filter: grayscale(.15) contrast(1.05); transform: scale(1.03); }
+  .portada-foto figcaption { position: absolute; inset: auto 0 0 0; padding: 14px 8px 6px;
+    font: 700 10px/1 var(--f-titulo); letter-spacing: .06em; text-transform: uppercase; color: #fff;
     background: linear-gradient(transparent, rgba(15, 17, 19, .86)); text-align: center; }
+  /* si una foto no carga (falta el archivo, sin red...) no se ve el ícono roto: queda un recuadro neutro con su nombre */
+  figure.sin-foto { background: linear-gradient(135deg, var(--bg), var(--borde)); }
+  figure.sin-foto img { display: none; }
   @media (max-width: 720px) {
-    .portada-mini { grid-template-columns: 1fr; gap: 12px; padding: 14px 16px; }
-    .portada-mini-fotos { height: 74px; }
+    .portada-mini { grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 16px; }
+    .portada-mini-txt { grid-column: 1 / -1; order: -1; }
+    .portada-foto { height: 92px; }
   }
   /* Borde y sombra roja difuminada en modo claro */
   :root[data-theme="light"] .bloque,
@@ -463,16 +466,13 @@
   <!-- ===================== R4 R5 R6 ===================== -->
   <section id="viajar" class="activa">
     <div class="portada-mini" aria-label="Bogotá en movimiento">
+      <figure class="portada-foto"><img src="/fotos/colpatria.jpg" alt="Torre Colpatria en Bogotá" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Torre Colpatria</figcaption></figure>
       <div class="portada-mini-txt">
         <div class="portada-mini-kicker">BOGOTÁ · COLOMBIA <span>· RED TRONCAL</span></div>
         <h1>Bogotá, en movimiento.</h1>
         <p>Planea tu recorrido directo o con transbordo en segundos sobre la red troncal de TransMilenio.</p>
       </div>
-      <div class="portada-mini-fotos" aria-label="Postales minimalistas de Bogotá">
-        <figure><img class="foto-colpatria" alt="Torre Colpatria en Bogotá"><figcaption>Colpatria</figcaption></figure>
-        <figure><img class="foto-plaza" alt="Plaza de Bolívar en Bogotá"><figcaption>Plaza Bolívar</figcaption></figure>
-        <figure><img class="foto-museo" alt="Museo Nacional en Bogotá"><figcaption>Museo Nacional</figcaption></figure>
-      </div>
+      <figure class="portada-foto"><img src="/fotos/plaza.jpg" alt="Plaza de Bolívar en Bogotá" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Plaza de Bolívar</figcaption></figure>
     </div>
     <div class="bloque">
       <div class="viajar-grid">
@@ -644,9 +644,9 @@
           <span class="suave" style="font-size:12px">Secuencias reales extraídas del motor GTFS (sin escala).</span>
         </div>
         <div class="editorial-fotos">
-          <figure><img class="foto-colpatria" alt="Torre Colpatria en Bogotá"><figcaption>Torre Colpatria</figcaption></figure>
-          <figure><img class="foto-plaza" alt="Plaza de Bolívar en Bogotá"><figcaption>Plaza de Bolívar</figcaption></figure>
-          <figure><img class="foto-museo" alt="Museo Nacional en Bogotá"><figcaption>Museo Nacional</figcaption></figure>
+          <figure><img src="/fotos/colpatria.jpg" alt="Torre Colpatria en Bogotá" loading="lazy" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Torre Colpatria</figcaption></figure>
+          <figure><img src="/fotos/plaza.jpg" alt="Plaza de Bolívar en Bogotá" loading="lazy" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Plaza de Bolívar</figcaption></figure>
+          <figure><img src="/fotos/museo.jpg" alt="Museo Nacional en Bogotá" loading="lazy" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Museo Nacional</figcaption></figure>
         </div>
       </div>
     </div>
@@ -1426,17 +1426,7 @@ function descargarCSV() {
 }
 // DESCARGA-FIN
 
-// Fotografías reales de Bogotá cargadas directamente de la web
-(() => {
-  const FOTOS = {
-    colpatria: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Torre_Colpatria_2018.jpg/480px-Torre_Colpatria_2018.jpg",
-    plaza: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Plaza_de_Bol%C3%ADvar%2C_Bogot%C3%A1%2C_Colombia_%282019%29.jpg/480px-Plaza_de_Bol%C3%ADvar%2C_Bogot%C3%A1%2C_Colombia_%282019%29.jpg",
-    museo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Museo_Nacional_de_Colombia_-_Fachada.jpg/480px-Museo_Nacional_de_Colombia_-_Fachada.jpg"
-  };
-  document.querySelectorAll(".foto-colpatria").forEach(img => { img.src = FOTOS.colpatria; });
-  document.querySelectorAll(".foto-plaza").forEach(img => { img.src = FOTOS.plaza; });
-  document.querySelectorAll(".foto-museo").forEach(img => { img.src = FOTOS.museo; });
-})();
+// Las fotos de Bogotá viven en app/fotos/ (colpatria.jpg, plaza.jpg, museo.jpg) y las sirve servidor.py en /fotos/
 
 document.querySelector('nav button[data-p="datos"]').addEventListener("click", cargarDatos);
 const refrescarOriginal = refrescar;
