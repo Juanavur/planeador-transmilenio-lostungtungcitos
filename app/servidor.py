@@ -319,8 +319,8 @@ class Manejador(BaseHTTPRequestHandler):
         if url.path == "/fondo_mapa.jpg":
             with open(os.path.join(AQUI, "fondo_mapa.jpg"), "rb") as f:
                 return self._enviar(200, f.read(), "image/jpeg", "public, max-age=86400")
-        if url.path == "/icono.png":
-            with open(os.path.join(AQUI, "icono.png"), "rb") as f:
+        if url.path == "/icono.ico":
+            with open(os.path.join(AQUI, "icono.ico"), "rb") as f:
                 return self._enviar(200, f.read(), "image/png", "public, max-age=86400")
         if url.path.startswith("/fotos/"):                  # fotos de Bogotá: app/fotos/<nombre>
             nombre = os.path.basename(url.path)             # solo el nombre del archivo, nada de carpetas
