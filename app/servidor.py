@@ -322,6 +322,15 @@ class Manejador(BaseHTTPRequestHandler):
         if url.path == "/icono.png":
             with open(os.path.join(AQUI, "icono.png"), "rb") as f:
                 return self._enviar(200, f.read(), "image/png", "public, max-age=86400")
+        if url.path.startswith("/fotos/"):                  # fotos de Bogotá: app/fotos/<nombre>
+            nombre = os.path.basename(url.path)             # solo el nombre del archivo, nada de carpetas
+            tipos = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+            ruta = os.path.join(AQUI, "fotos", nombre)
+            tipo = tipos.get(os.path.splitext(nombre)[1].lower())
+            if tipo and os.path.isfile(ruta):
+                with open(ruta, "rb") as f:
+                    return self._enviar(200, f.read(), tipo, "public, max-age=86400")
+            return self._enviar(404, "No encontrado", "text/plain; charset=utf-8")
         if url.path.startswith("/api/"):
             nombre = url.path[5:]
             funcion = RUTAS.get(nombre)
