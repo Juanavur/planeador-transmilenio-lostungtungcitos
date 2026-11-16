@@ -17,11 +17,10 @@
 <meta property="og:image:height" content="512">
 <meta name="twitter:card" content="summary">
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preload" as="image" href="/fondo_mapa.jpg" fetchpriority="high">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap">
 <style>
-  /* Layout: señalética de estación. Letrero oscuro para los nombres, insignias de ruta por zona,
-     itinerarios dibujados como diagrama de línea y un tablero LED para el próximo bus. */
   :root {
     --bg: #eef0ee; --panel: #ffffff; --texto: #15181b; --suave: #5b6268; --borde: #dde1de; --linea: #c4c9c6;
     --rojo: #c8102e; --sobre-rojo: #ffffff; --rojo-suave: #fbe7ea;
@@ -54,6 +53,82 @@
          min-height: 100vh; display: flex; flex-direction: column; }
   .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
+  /* ---------- splash screen inicial */
+  #carga-inicial { position: fixed; z-index: 100; inset: 0; overflow: hidden; background: #0E303C; color: #F2F0EA;
+    display: grid; place-items: center; padding: clamp(24px, 5vw, 76px); transition: opacity .32s ease, visibility .32s ease; }
+  #carga-inicial::before { content: ""; position: absolute; inset: 22px; pointer-events: none; border: 1px solid rgba(242,240,234,.2); }
+  #carga-inicial.fin { opacity: 0; visibility: hidden; pointer-events: none; }
+  .splash-inner { position: relative; width: min(1240px, 100%); animation: splash-reveal .38s ease-out both; }
+  @keyframes splash-reveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .splash-kicker { display: flex; justify-content: space-between; gap: 16px; border-top: 1px solid rgba(242,240,234,.45);
+    padding-top: 10px; color: #E5E2D9; font: 700 11px/1.2 var(--f-titulo); letter-spacing: .14em; text-transform: uppercase; }
+  .splash-title { display: block; margin: clamp(18px, 4vh, 44px) 0 0; font: 800 clamp(84px, 19vw, 260px)/.78 var(--f-titulo);
+    letter-spacing: -.04em; text-transform: uppercase; white-space: nowrap; color: #F2F0EA;
+    background-image: url("/fondo_mapa.jpg"); background-position: 48% 50%; background-size: cover;
+    background-blend-mode: screen; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    filter: grayscale(1) contrast(1.25); }
+  .splash-footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-top: clamp(18px, 4vh, 44px);
+    border-top: 1px solid rgba(242,240,234,.45); padding-top: 11px; }
+  .splash-country { margin: 0; font: 700 clamp(16px, 2.2vw, 26px)/1 var(--f-titulo); letter-spacing: .26em; text-transform: uppercase; }
+  .splash-caption { margin: 0; color: #D3D6D2; font: 600 11px/1.35 var(--f-texto); letter-spacing: .08em; text-align: right; text-transform: uppercase; }
+
+  /* ---------- skeleton loaders */
+  .skeleton { position: relative; overflow: hidden; border: 1px solid var(--borde); border-radius: 12px; background: var(--bg); margin-top: 12px; }
+  .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(100deg, transparent 28%, color-mix(in srgb, var(--panel) 65%, transparent) 48%, transparent 68%);
+    animation: wire-shimmer 1.8s ease-in-out infinite; pointer-events: none; }
+  .skeleton-stack { display: grid; gap: 10px; padding: 14px; }
+  .skeleton-line { display: block; height: 10px; width: 66%; border-radius: 4px; background: var(--borde); }
+  .skeleton-line.short { width: 38%; } .skeleton-line.long { width: 86%; }
+  .skeleton-card { min-height: 76px; }
+  .skeleton-table { min-height: 180px; }
+  @keyframes wire-shimmer { to { transform: translateX(100%); } }
+
+  /* ---------- portada minimalista en Viajar con fotos reales */
+  .portada-mini { position: relative; isolation: isolate; overflow: hidden; margin-bottom: 16px;
+    background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 16px 20px;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 340px); gap: 18px; align-items: center;
+    box-shadow: 0 1px 2px rgba(20, 24, 27, .04), 0 8px 24px rgba(20, 24, 27, .05); }
+  .portada-mini::before { content: ""; position: absolute; z-index: -1; inset: 0; opacity: .07; pointer-events: none;
+    background: url("/fondo_mapa.jpg") center 48% / cover no-repeat; filter: grayscale(1); }
+  .portada-mini-txt { display: flex; flex-direction: column; gap: 4px; }
+  .portada-mini-kicker { display: inline-flex; align-items: center; gap: 8px; font: 700 11px/1 var(--f-titulo);
+    letter-spacing: .12em; text-transform: uppercase; color: var(--rojo); }
+  .portada-mini-kicker span { color: var(--suave); }
+  .portada-mini h1 { margin: 2px 0; font: 800 clamp(26px, 3.2vw, 36px)/.96 var(--f-titulo);
+    letter-spacing: -.01em; text-transform: uppercase; color: var(--texto); }
+  .portada-mini p { margin: 0; font-size: 13.5px; color: var(--suave); max-width: 52ch; }
+  .portada-mini-fotos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; height: 86px; }
+  .portada-mini-fotos figure { position: relative; margin: 0; border-radius: 10px; overflow: hidden;
+    border: 1px solid var(--borde); background: var(--bg); height: 100%; }
+  .portada-mini-fotos img { width: 100%; height: 100%; object-fit: cover; display: block;
+    filter: grayscale(1) contrast(1.08); transition: filter .25s ease, transform .25s ease; }
+  .portada-mini-fotos figure:hover img { filter: grayscale(.15) contrast(1.05); transform: scale(1.03); }
+  .portada-mini-fotos figcaption { position: absolute; inset: auto 0 0 0; padding: 12px 6px 4px;
+    font: 700 9.5px/1 var(--f-titulo); letter-spacing: .06em; text-transform: uppercase; color: #fff;
+    background: linear-gradient(transparent, rgba(15, 17, 19, .86)); text-align: center; }
+  @media (max-width: 720px) {
+    .portada-mini { grid-template-columns: 1fr; gap: 12px; padding: 14px 16px; }
+    .portada-mini-fotos { height: 74px; }
+  }
+  /* Borde y sombra roja difuminada en modo claro */
+  :root[data-theme="light"] .bloque,
+  :root[data-theme="light"] .portada-mini {
+    border-color: rgba(200, 16, 46, 0.25);
+    box-shadow: 0 0 0 1px rgba(200, 16, 46, 0.08),
+                0 6px 22px -2px rgba(200, 16, 46, 0.16),
+                0 2px 6px rgba(20, 24, 27, 0.04);
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) .bloque,
+    :root:not([data-theme="dark"]) .portada-mini {
+      border-color: rgba(200, 16, 46, 0.25);
+      box-shadow: 0 0 0 1px rgba(200, 16, 46, 0.08),
+                  0 6px 22px -2px rgba(200, 16, 46, 0.16),
+                  0 2px 6px rgba(20, 24, 27, 0.04);
+    }
+  }
+
   /* ---------- barra superior y pestañas */
   .barra { background: var(--panel); border-bottom: 1px solid var(--borde); }
   .barra-in { max-width: 1040px; margin: 0 auto; padding-block: 12px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
@@ -71,7 +146,7 @@
   nav button:hover { color: var(--texto); }
   nav button.activo { color: var(--texto); border-bottom-color: var(--rojo); }
 
-  main { max-width: 1040px; width: 100%; margin: 0 auto; padding-block: 22px 40px; flex: 1; }
+  main { max-width: 1040px; width: 100%; margin: 0 auto; padding-block: 22px 48px; flex: 1; }
   section { display: none; } section.activa { display: block; }
   .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; align-items: start; }
   .bloque { background: var(--panel); border: 1px solid var(--borde); border-radius: 16px; padding: 20px 22px 22px; min-width: 0;
@@ -82,7 +157,6 @@
   h2 { margin: 0; font: 700 22px/1.1 var(--f-titulo); letter-spacing: .01em; text-wrap: balance; }
   .req { display: none; font: 700 12px/1 var(--f-titulo); letter-spacing: .08em; color: var(--rojo); background: var(--rojo-suave);
          padding: 4px 7px; border-radius: 4px; }
-  .nota { font-size: 13px; color: var(--suave); margin: 0 0 16px; max-width: 75ch; }
 
   /* ---------- layout de viajar con mapa al lado */
   .viajar-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr); gap: 22px; align-items: start; }
@@ -92,6 +166,25 @@
                       letter-spacing: .06em; text-transform: uppercase; color: var(--suave); }
   #viaje-mapa-svg { display: block; width: 100%; height: min(54vh, 460px); touch-action: none; cursor: grab; user-select: none; }
   #viaje-mapa-svg:active { cursor: grabbing; }
+
+  /* ---------- tarjeta editorial compacta en Datos */
+  .editorial-grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 16px; align-items: stretch; }
+  @media (max-width: 780px) { .editorial-grid { grid-template-columns: 1fr; } }
+  .editorial-fotos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .editorial-fotos figure { position: relative; margin: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--borde); min-height: 130px; }
+  .editorial-fotos img { width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(.65) contrast(1.06); }
+  .editorial-fotos figcaption { position: absolute; inset: auto 0 0 0; padding: 14px 8px 6px; font: 700 11px/1 var(--f-titulo);
+    letter-spacing: .06em; text-transform: uppercase; color: #fff; background: linear-gradient(transparent, rgba(15,17,19,.86)); }
+  .diagrama-caja { border: 1px solid var(--borde); border-radius: 10px; padding: 10px 12px; background: var(--bg);
+    display: flex; flex-direction: column; justify-content: space-between; }
+  .diagrama-head { display: flex; justify-content: space-between; gap: 8px; font: 700 11px/1.2 var(--f-titulo);
+    letter-spacing: .08em; text-transform: uppercase; color: var(--suave); padding-bottom: 6px; border-bottom: 1px solid var(--borde); }
+  #hero-route { display: block; width: 100%; height: 120px; overflow: visible; }
+  #hero-route .route-id { fill: var(--texto); font: 800 10px var(--f-titulo); }
+  #hero-route .station-name { fill: var(--suave); font: 700 7.5px var(--f-titulo); }
+  #hero-route .route-lane { fill: none; stroke-width: 3.5; stroke-linecap: square; }
+  #hero-route .station-node { fill: var(--panel); stroke-width: 2.2; }
+  #hero-route .transfer-node { fill: var(--led); stroke: var(--rojo); stroke-width: 2.4; }
 
   /* ---------- controles */
   .fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: end; }
@@ -224,7 +317,6 @@
   tr.clic { cursor: pointer; }
   .cerrada { color: var(--ambar); font-weight: 600; }
   body.tecnico .req { display: inline-block; }
-  .tec { display: none; } body.tecnico .tec { display: block; }
   .ayuda { margin: -6px 0 14px; color: var(--suave); font-size: 15px; max-width: 70ch; }
   .ida-vuelta { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: end; }
   .ida-vuelta button.invertir { width: 46px; padding: 0; font-size: 20px; border-radius: 50%; }
@@ -240,7 +332,7 @@
            box-shadow: 0 10px 30px rgba(0, 0, 0, .25); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 20;
            max-width: calc(100% - 32px); }
   .toast.ver { opacity: 1; transform: translate(-50%, 0); }
-  @media (prefers-reduced-motion: reduce) { .toast, .interruptor i, .interruptor i::after { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .toast, .interruptor i, .interruptor i::after, .skeleton::after { transition: none; animation: none; } }
   .mapa-cont { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
   @media (max-width: 880px) { .mapa-cont { grid-template-columns: 1fr; } }
   .mapa-caja { position: relative; border: 1px solid var(--borde); border-radius: 12px; overflow: hidden; background: var(--bg); }
@@ -249,16 +341,16 @@
   .m-est { cursor: pointer; }
   .m-nom { fill: var(--texto); font-family: var(--f-titulo); font-weight: 700; letter-spacing: .02em; pointer-events: none; }
   .m-nom.portal { font-weight: 800; }
-  .mapa-ctrl { position: absolute; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
+  .mapa-ctrl { position: absolute; z-index: 2; right: 10px; top: 10px; display: flex; flex-direction: column; gap: 6px; }
   .mapa-ctrl button { width: 42px; height: 42px; min-height: 0; padding: 0; border-radius: 12px; font-size: 20px; line-height: 1;
                       background: color-mix(in srgb, var(--panel) 86%, transparent); backdrop-filter: blur(6px);
                       border-color: var(--linea); box-shadow: 0 3px 10px rgba(0, 0, 0, .18); }
   .mapa-ctrl button:hover { background: var(--panel); border-color: var(--suave); }
-  .mapa-norte, #mapa-zoom, #viaje-mapa-zoom { position: absolute; left: 10px; font: 700 12px/1 var(--f-titulo); letter-spacing: .06em; color: var(--suave);
+  .mapa-norte, #mapa-zoom, #viaje-mapa-zoom { position: absolute; z-index: 2; left: 10px; font: 700 12px/1 var(--f-titulo); letter-spacing: .06em; color: var(--suave);
                             background: color-mix(in srgb, var(--panel) 86%, transparent); backdrop-filter: blur(6px);
                             padding: 6px 8px; border-radius: 8px; pointer-events: none; }
   .mapa-norte { top: 10px; } #mapa-zoom, #viaje-mapa-zoom { bottom: 10px; }
-  .mapa-osm { position: absolute; right: 0; bottom: 0; font: 500 11px/1 var(--f-texto); color: var(--suave); background: var(--panel);
+  .mapa-osm { position: absolute; z-index: 2; right: 0; bottom: 0; font: 500 11px/1 var(--f-texto); color: var(--suave); background: var(--panel);
               padding: 5px 8px; border-top-left-radius: 8px; text-decoration: none; opacity: .92; }
   .mapa-osm:hover { color: var(--texto); text-decoration: underline; }
   .m-fondo { opacity: .8; }
@@ -301,6 +393,14 @@
 </head>
 <body>
 <!--FIN-CUERPO-->
+<div id="carga-inicial" role="status" aria-live="polite" aria-label="Cargando la red de transporte">
+  <div class="splash-inner">
+    <div class="splash-kicker"><span>Planeador TransMilenio</span><span>Red troncal · 4° 42′ N / 74° 04′ O</span></div>
+    <h1 class="splash-title">Bogotá</h1>
+    <div class="splash-footer"><p class="splash-country">Colombia · Los Tungtungcitos</p><p class="splash-caption">Movilidad urbana<br>Una ciudad en movimiento</p></div>
+  </div>
+</div>
+
 <header class="barra"><div class="barra-in gutter">
   <div class="marca">
     <svg class="glifo" viewBox="0 0 40 40" aria-hidden="true">
@@ -362,6 +462,18 @@
 
   <!-- ===================== R4 R5 R6 ===================== -->
   <section id="viajar" class="activa">
+    <div class="portada-mini" aria-label="Bogotá en movimiento">
+      <div class="portada-mini-txt">
+        <div class="portada-mini-kicker">BOGOTÁ · COLOMBIA <span>· RED TRONCAL</span></div>
+        <h1>Bogotá, en movimiento.</h1>
+        <p>Planea tu recorrido directo o con transbordo en segundos sobre la red troncal de TransMilenio.</p>
+      </div>
+      <div class="portada-mini-fotos" aria-label="Postales minimalistas de Bogotá">
+        <figure><img class="foto-colpatria" alt="Torre Colpatria en Bogotá"><figcaption>Colpatria</figcaption></figure>
+        <figure><img class="foto-plaza" alt="Plaza de Bolívar en Bogotá"><figcaption>Plaza Bolívar</figcaption></figure>
+        <figure><img class="foto-museo" alt="Museo Nacional en Bogotá"><figcaption>Museo Nacional</figcaption></figure>
+      </div>
+    </div>
     <div class="bloque">
       <div class="viajar-grid">
         <div>
@@ -503,7 +615,7 @@
     </div>
   </section>
 
-  <!-- ===================== Tabla de datos ===================== -->
+  <!-- ===================== Tabla de datos + contexto Bogotá ===================== -->
   <section id="datos">
     <div class="bloque">
       <div class="cabeza"><h2>Tabla de datos</h2></div>
@@ -522,6 +634,21 @@
       <p class="suave" id="d-cuenta" style="margin:12px 0 0"></p>
       <div class="tabla-caja"><table id="d-tabla"></table></div>
       <div id="d-horas"></div>
+    </div>
+    <div class="bloque">
+      <div class="cabeza"><h2>Bogotá en red · Nodo de intercambio y ciudad</h2></div>
+      <div class="editorial-grid">
+        <div class="diagrama-caja">
+          <div class="diagrama-head"><span id="hero-route-title">Red troncal · conexiones</span><span id="hero-transfer-label">Cargando nodo…</span></div>
+          <svg id="hero-route" viewBox="0 0 420 165" role="img" aria-label="Esquema de conexiones basado en secuencias reales del motor"></svg>
+          <span class="suave" style="font-size:12px">Secuencias reales extraídas del motor GTFS (sin escala).</span>
+        </div>
+        <div class="editorial-fotos">
+          <figure><img class="foto-colpatria" alt="Torre Colpatria en Bogotá"><figcaption>Torre Colpatria</figcaption></figure>
+          <figure><img class="foto-plaza" alt="Plaza de Bolívar en Bogotá"><figcaption>Plaza de Bolívar</figcaption></figure>
+          <figure><img class="foto-museo" alt="Museo Nacional en Bogotá"><figcaption>Museo Nacional</figcaption></figure>
+        </div>
+      </div>
     </div>
   </section>
 </main>
@@ -582,11 +709,14 @@ async function api(nombre, params = {}) {
   return datos;
 }
 // API-REMOTA-FIN
+function skeletonMarkup(tipo = "card", lineas = 3) {
+  const barras = Array.from({length: lineas}, (_, i) => `<i class="skeleton-line ${i === 0 ? "long" : i === lineas - 1 ? "short" : ""}"></i>`).join("");
+  return `<div class="skeleton skeleton-${tipo}" role="status" aria-label="Cargando contenido"><div class="skeleton-stack">${barras}</div></div>`;
+}
 const aviso = (ok, si, no) => `<div class="aviso ${ok ? "ok" : "mal"}">${esc(ok ? si : no)}</div>`;
 const opciones = (lista, elegido) => lista.map(x => `<option ${x === elegido ? "selected" : ""}>${esc(x)}</option>`).join("");
 let tempo = {}; const luego = (k, f) => { clearTimeout(tempo[k]); tempo[k] = setTimeout(f, 150); };
 
-// lo que la persona escribe -> nombre exacto de una estación (sin importar tildes ni mayúsculas)
 const normal = t => String(t || "").normalize("NFD").replace(DIACRITICOS, "").toUpperCase().split(/\s+/).filter(Boolean).join(" ");
 function est(id) {
   const v = normal($(id).value);
@@ -594,13 +724,11 @@ function est(id) {
   for (const e of ESTACIONES) if (e === v) return e;
   return null;
 }
-// aviso flotante que se va solo
 let tToast = null;
 function avisar(texto) {
   const t = $("toast"); t.textContent = texto; t.classList.add("ver");
   clearTimeout(tToast); tToast = setTimeout(() => t.classList.remove("ver"), 2600);
 }
-// modo sustentación: muestra los números de requisito (R1…R11)
 function alternarTecnico(forzar) {
   const on = typeof forzar === "boolean" ? forzar : !document.body.classList.contains("tecnico");
   document.body.classList.toggle("tecnico", on);
@@ -618,7 +746,6 @@ function invertirViaje() {
   viaje();
 }
 
-// color de cada ruta según la letra de su zona (convención de esta app)
 const ZONAS = {A: "#1f5fae", B: "#2e7d32", C: "#d9730d", D: "#6a3fa0", E: "#b0175a", F: "#c8102e", G: "#0b8494",
                H: "#a8550a", J: "#7a6233", K: "#4f6170", L: "#00796b", M: "#37474f"};
 const colorRuta = r => ZONAS[String(r).charAt(0).toUpperCase()] || "#2b2f33";
@@ -647,7 +774,7 @@ document.querySelectorAll("#pestanas button").forEach(b => b.onclick = () => {
   if (b.dataset.p === "viajar" || b.dataset.p === "mapa") setTimeout(dibujarMapa, 10);
 });
 
-// ---------- carga y refresco general (después de cualquier cambio)
+// ---------- carga y refresco general
 async function refrescar() {
   const info = await api("info");
   ESTACIONES = info.abiertas; RUTAS = info.rutas;
@@ -658,6 +785,7 @@ async function refrescar() {
   if (!$("p-estacion").value) $("p-estacion").value = ESTACIONES.includes("CALLE 26") ? "CALLE 26" : ESTACIONES[0];
   $("o-ruta").innerHTML = opciones(RUTAS, $("o-ruta").value || (RUTAS.includes("B74") ? "B74" : RUTAS[0]));
   await cargarMapa();
+  dibujarHeroRuta(MAPA.datos);
   buscar(); rango(); viaje(); rutasDe(); ranking(); recorrido();
 }
 
@@ -668,6 +796,7 @@ async function buscar() {
     $("b-estado").innerHTML = `<p class="suave" style="margin:12px 0 0">Prueba con «calle», «portal» o «av».</p>`;
     $("b-sugerencias").innerHTML = ""; return;
   }
+  $("b-estado").innerHTML = skeletonMarkup("card", 2);
   const [e, sug] = await Promise.all([api("estado", {nombre: texto}), api("autocompletar", {prefijo: texto, k: $("b-k").value})]);
   if (!e.existe) $("b-estado").innerHTML = sug.length
       ? `<p class="suave" style="margin:14px 0 0">¿Cuál de estas? Toca una para ver su letrero.</p>`
@@ -690,7 +819,7 @@ async function rango() {
 }
 $("r-desde").oninput = () => luego("r", rango); $("r-hasta").oninput = () => luego("r", rango);
 
-// ---------- R5: el viaje se dibuja como un diagrama de línea + se actualiza en el mapa de al lado
+// ---------- R5
 async function viaje() {
   const o = est("v-origen"), d = est("v-destino");
   if (!o || !d) {
@@ -699,6 +828,7 @@ async function viaje() {
     dibujarMapa(); pintarInfoMapa();
     return;
   }
+  $("v-plan").innerHTML = skeletonMarkup("card", 3);
   const plan = await api("viaje", {origen: o, destino: d});
   if (plan === null) {
     $("v-plan").innerHTML = `<div class="aviso mal">No hay viaje directo ni con un solo transbordo entre estas dos estaciones.</div>`;
@@ -736,7 +866,7 @@ async function viaje() {
 }
 $("v-origen").oninput = () => luego("v", viaje); $("v-destino").oninput = () => luego("v", viaje);
 
-// ---------- R4: tablero LED
+// ---------- R4
 async function rutasDe() {
   const e = est("p-estacion");
   if (!e) { $("p-ruta").innerHTML = ""; $("p-resultado").innerHTML = `<p class="hint">Escribe tu estación y tócala en la lista.</p>`; return; }
@@ -771,7 +901,7 @@ async function ranking() {
 }
 $("k-rank").oninput = () => luego("k", ranking);
 
-// ---------- R7: el recorrido se dibuja como una línea con sus paradas
+// ---------- R7
 async function recorrido() {
   const ruta = $("o-ruta").value;
   const r = await api("recorrido", {ruta});
@@ -819,7 +949,7 @@ async function cambio(tipo) {
 
 // ---------- R10
 async function simular() {
-  $("f-boton").disabled = true; $("f-resultado").innerHTML = `<p class="suave" style="margin:14px 0 0">Simulando…</p>`;
+  $("f-boton").disabled = true; $("f-resultado").innerHTML = skeletonMarkup("table", 3);
   try {
     const r = await api("fila", {pasajeros: $("f-pasajeros").value, ventana: $("f-ventana").value,
                                  frecuencia: $("f-frecuencia").value, capacidad: $("f-capacidad").value});
@@ -835,7 +965,7 @@ async function simular() {
 // ---------- R11
 async function medirTodo() {
   $("m-boton").disabled = true;
-  $("m-resultado").innerHTML = `<p class="suave" style="margin:14px 0 0">Midiendo… generando redes y corriendo cada operación.</p>`;
+  $("m-resultado").innerHTML = `<p class="suave">Midiendo redes y operaciones…</p>${skeletonMarkup("table", 4)}`;
   try {
     const ops = await api("medir", {tamanos: $("m-tamanos").value});
     $("m-resultado").innerHTML = `<div class="graficas">` + ops.map(op => {
@@ -884,7 +1014,59 @@ function grafica(series, ejeX, ejeY, W = 520, H = 200) {
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Gráfica de ${esc(ejeY)} contra ${esc(ejeX)}">${g}</svg>`;
 }
 
-// ---------- Mapa cenital de la red (vista desde arriba, con las coordenadas reales de cada estación)
+// ---------- Diagrama de conexiones del motor
+function dibujarHeroRuta(d) {
+  const svg = $("hero-route");
+  if (!svg || !d || !d.estaciones || !d.rutas) return;
+  const centro = d.estaciones.slice().sort((a, b) => {
+    const coloresA = new Set(a.rutas.map(r => String(r).charAt(0).toUpperCase())).size;
+    const coloresB = new Set(b.rutas.map(r => String(r).charAt(0).toUpperCase())).size;
+    return coloresB - coloresA || b.rutas.length - a.rutas.length;
+  })[0];
+  if (!centro || !centro.rutas.length) return;
+  const disponibles = centro.rutas.map(id => d.rutas.find(r => r.ruta === id)).filter(Boolean);
+  const prioridad = ["F", "B", "C", "G", "A", "D", "E", "H", "J", "K", "L", "M"];
+  const segmentos = [];
+  for (const prefijo of prioridad) {
+    const ruta = disponibles.find(r => String(r.ruta).charAt(0).toUpperCase() === prefijo && !segmentos.some(s => s.ruta === r.ruta));
+    if (ruta) segmentos.push(ruta);
+    if (segmentos.length === 3) break;
+  }
+  const lineas = segmentos.map(ruta => {
+    const centroRuta = ruta.paradas.indexOf(centro.nombre);
+    if (centroRuta < 0) return null;
+    const desde = Math.max(0, centroRuta - 3), hasta = Math.min(ruta.paradas.length, centroRuta + 4);
+    return {ruta: ruta.ruta, paradas: ruta.paradas.slice(desde, hasta).map((nombre, i) => ({nombre, offset: desde + i - centroRuta}))};
+  }).filter(s => s && s.paradas.length > 1);
+  if (!lineas.length) return;
+  const xCentro = 210, paso = 50, ys = [26, 82, 138];
+  let dibujo = '<path d="M' + xCentro + ' ' + ys[0] + 'V' + ys[lineas.length - 1] + '" fill="none" stroke="var(--linea)" stroke-width="2" stroke-dasharray="2 4"/>';
+  const nodosTransferencia = [];
+  lineas.forEach((s, i) => {
+    const y = ys[i], color = colorRuta(s.ruta);
+    const puntos = s.paradas.map(p => ({nombre: p.nombre, x: xCentro + p.offset * paso}));
+    dibujo += '<text class="route-id" x="8" y="' + (y + 4) + '">' + esc(s.ruta) + '</text>';
+    dibujo += '<path class="route-lane" d="M' + puntos[0].x + ' ' + y + 'H' + puntos[puntos.length - 1].x + '" stroke="' + color + '"/>';
+    puntos.forEach((p, j) => {
+      if (p.nombre === centro.nombre) {
+        nodosTransferencia.push('<circle class="transfer-node" cx="' + p.x + '" cy="' + y + '" r="5.5"><title>' + esc(centro.nombre) + '</title></circle>');
+        return;
+      }
+      dibujo += '<circle class="station-node" cx="' + p.x + '" cy="' + y + '" r="3.2" stroke="' + color + '"/>';
+      if (j === 0 || j === puntos.length - 1) {
+        const anchor = j === 0 ? "start" : "end";
+        const label = p.nombre.length > 20 ? p.nombre.slice(0, 18) + "…" : p.nombre;
+        dibujo += '<text class="station-name" x="' + p.x + '" y="' + (y - 7) + '" text-anchor="' + anchor + '">' + esc(label) + '</text>';
+      }
+    });
+  });
+  dibujo += nodosTransferencia.join("");
+  svg.innerHTML = dibujo;
+  $("hero-route-title").textContent = "Rutas · " + lineas.map(s => s.ruta).join(" / ");
+  $("hero-transfer-label").textContent = "Nodo · " + centro.nombre;
+}
+
+// ---------- Mapa cenital de la red
 const FONDO_MAPA = "fondo_mapa.jpg"; // FONDO-MAPA
 const MOSAICO = {z: 14, x0: 4813, y0: 7973, ancho: 2816, alto: 3584};
 const MAPA = {datos: null, ruta: "", viaje: null, sel: null, z: 1, cx: 0, cy: 0, W: 600, H: 860, punteros: new Map(), arrastre: null, enfocarPendiente: false};
@@ -1032,7 +1214,6 @@ function dibujarMapa() {
     for (let i = 1; i < l.length; i++) if (P[l[i - 1]] && P[l[i]]) gBase += linea(l[i - 1], l[i], colorRuta(MAPA.ruta), 6 * s, "", 5.5 * s);
     l.forEach(x => destacadas.add(x));
   }
-  // Dibujar solo los tramos del viaje planeado centrados sobre las paradas
   for (const t of viaje) {
     const col = colorRuta(t.ruta);
     for (let i = 1; i < t.paradas.length; i++) {
@@ -1046,7 +1227,6 @@ function dibujarMapa() {
   const extremos = new Set(viaje.length ? [viaje[0].paradas[0], viaje[viaje.length - 1].paradas.slice(-1)[0]] : []);
   if (viaje.length > 1) extremos.add(viaje[1].paradas[0]);
 
-  // Pintar tanto en el mapa de la pestaña Viajar como en el de la pestaña Mapa
   ["viaje-mapa-svg", "mapa-svg"].forEach(id => {
     const svg = $(id);
     if (!svg) return;
@@ -1059,7 +1239,7 @@ function dibujarMapa() {
       if (viaje.length && !destacadas.has(e.nombre)) continue;
       const [x, y] = P[e.nombre], portal = e.nombre.startsWith("PORTAL"), dest = destacadas.has(e.nombre), sel = MAPA.sel === e.nombre;
       const r = (portal ? 6 : 4) * s * (dest || sel ? 1.25 : 1) * (extremos.has(e.nombre) ? 1.35 : 1);
-      const borde = !e.abierta ? "var(--ambar)" : sel ? "var(--azul)" : dest ? "var(--texto)" : "var(--texto)";
+      const borde = !e.abierta ? "var(--ambar)" : sel ? "var(--azul)" : "var(--texto)";
       const relleno = extremos.has(e.nombre) ? "var(--texto)" : "var(--panel)";
       g += `<circle class="m-est" data-n="${esc(e.nombre)}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}" fill="${relleno}" stroke="${borde}"
              stroke-width="${(sel ? 3 : 1.8) * s}" ${e.abierta ? "" : `stroke-dasharray="${2 * s} ${1.5 * s}"`}><title>${esc(e.nombre)}</title></circle>`;
@@ -1080,6 +1260,7 @@ function dibujarMapa() {
   if ($("mapa-zoom")) $("mapa-zoom").textContent = txtZoom;
   if ($("viaje-mapa-zoom")) $("viaje-mapa-zoom").textContent = txtZoom;
 }
+
 function pintarInfoMapa() {
   const e = MAPA.sel && MAPA.porNombre ? MAPA.porNombre[MAPA.sel] : null;
   let html = "";
@@ -1127,7 +1308,6 @@ async function verViajeEnMapa() {
   document.querySelector('nav button[data-p="mapa"]').click();
 }
 
-// interacción: tocar estación, arrastrar, rueda y pellizco en cualquiera de los dos mapas
 function conectarEventosMapa(svg) {
   if (!svg) return;
   const aSvg = (cx, cy) => {
@@ -1189,6 +1369,7 @@ $("d-ruta").onchange = () => { $("d-horas").innerHTML = ""; cargarDatos(); };
 
 async function cargarDatos() {
   $("d-ruta-label").style.display = vista === "horarios" ? "" : "none";
+  $("d-tabla").innerHTML = `<tbody><tr><td colspan="6">${skeletonMarkup("table", 4)}</td></tr></tbody>`;
   if (vista === "horarios") {
     if (!$("d-ruta").options.length) $("d-ruta").innerHTML = opciones(RUTAS, RUTAS.includes("B74") ? "B74" : RUTAS[0]);
     filasDatos = await api("tabla_horarios", {ruta: $("d-ruta").value});
@@ -1245,14 +1426,31 @@ function descargarCSV() {
 }
 // DESCARGA-FIN
 
-// la tabla se recarga sola cuando se abre la pestaña o cambia la red
+// Fotografías reales de Bogotá cargadas directamente de la web
+(() => {
+  const FOTOS = {
+    colpatria: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Torre_Colpatria_2018.jpg/480px-Torre_Colpatria_2018.jpg",
+    plaza: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Plaza_de_Bol%C3%ADvar%2C_Bogot%C3%A1%2C_Colombia_%282019%29.jpg/480px-Plaza_de_Bol%C3%ADvar%2C_Bogot%C3%A1%2C_Colombia_%282019%29.jpg",
+    museo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Museo_Nacional_de_Colombia_-_Fachada.jpg/480px-Museo_Nacional_de_Colombia_-_Fachada.jpg"
+  };
+  document.querySelectorAll(".foto-colpatria").forEach(img => { img.src = FOTOS.colpatria; });
+  document.querySelectorAll(".foto-plaza").forEach(img => { img.src = FOTOS.plaza; });
+  document.querySelectorAll(".foto-museo").forEach(img => { img.src = FOTOS.museo; });
+})();
+
 document.querySelector('nav button[data-p="datos"]').addEventListener("click", cargarDatos);
 const refrescarOriginal = refrescar;
 refrescar = async () => { await refrescarOriginal(); if ($("datos").classList.contains("activa")) cargarDatos();
                           if ($("mapa").classList.contains("activa")) cargarMapa(); };
 
 (() => { const d = new Date(); $("p-hora").value = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0"); })();
-refrescar();
+(async function iniciar() {
+  const promesa = refrescar();
+  await new Promise(r => setTimeout(r, 850));
+  const splash = $("carga-inicial");
+  if (splash) { splash.classList.add("fin"); setTimeout(() => splash.remove(), 350); }
+  await promesa;
+})();
 </script>
 <!--INICIO-PIE-->
 </body>
