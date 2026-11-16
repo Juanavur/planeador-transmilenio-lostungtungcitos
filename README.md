@@ -83,7 +83,7 @@ motor/                      ← todo lo que resuelve requisitos (solo list, str,
 app/                        ← el front (solo llama al motor)
   servidor.py               servidor web con solo librería estándar: traduce peticiones a llamadas del motor
   fondo_mapa.jpg            fondo del mapa (© colaboradores de OpenStreetMap)
-  icono.png                 ícono de la app (pestaña del navegador y vista previa al compartir el link)
+  icono.ico                 ícono de la app (pestaña del navegador y vista previa al compartir el link)
   index.html                la página: pestañas, tabla de datos, gráficas SVG y panel de rendimiento (R11)
   herramientas/             generador de redes sintéticas, medición, revisor de prohibidos
   pruebas/                  pruebas del motor con una red pequeña hecha a mano
