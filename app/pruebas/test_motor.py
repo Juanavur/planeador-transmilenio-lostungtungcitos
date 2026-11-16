@@ -67,10 +67,10 @@ class TestRed(unittest.TestCase):
 
     # R1
     def test_estado(self):
-        self.assertEqual(self.red.estado("A"), (True, True))
-        self.assertEqual(self.red.estado("Z"), (False, False))
+        self.assertEqual(self.red.estado("A"), "ABIERTA")
+        self.assertEqual(self.red.estado("Z"), "NO EXISTE")
         self.red.cerrar("A")
-        self.assertEqual(self.red.estado("A"), (True, False))
+        self.assertEqual(self.red.estado("A"), "CERRADA")
 
     # R2
     def test_autocompletar(self):
@@ -94,7 +94,7 @@ class TestRed(unittest.TestCase):
     def test_proximo_bus(self):
         self.assertEqual(self.red.proximo_bus("A", "R1", "05:30"), "06:00")
         self.assertEqual(self.red.proximo_bus("A", "R1", "06:00"), "06:00")   # justo a la hora
-        self.assertEqual(self.red.proximo_bus("A", "R1", "08:00"), "05:00")   # día siguiente
+        self.assertIsNone(self.red.proximo_bus("A", "R1", "08:00"))            # no hay más ese día
         self.assertEqual(self.red.proximo_bus("C", "R2", "00:30"), "01:10")   # 25:10 -> 01:10
         self.assertIsNone(self.red.proximo_bus("D", "R1", "06:00"))            # sin horarios
         self.assertIsNone(self.red.proximo_bus("A", "R2", "06:00"))            # R2 no para en A
@@ -103,30 +103,29 @@ class TestRed(unittest.TestCase):
 
     # R5
     def test_viaje(self):
-        self.assertEqual(self.red.viaje("A", "D"), [("R1", "A", "D", 3)])
-        self.assertEqual(self.red.viaje("A", "E"), [("R3", "A", "E", 1)])
-        # A -> F: R1 hasta C (2) + R2 hasta F (2) = 4, contra R3 hasta E (1) + ... E no tiene ruta a F
-        # salvo R2 desde E (1) -> R3 A->E (1) + R2 E->F (1) = 2
-        self.assertEqual(self.red.viaje("A", "F"), [("R3", "A", "E", 1), ("R2", "E", "F", 1)])
-        self.assertIsNone(self.red.viaje("D", "A"))                 # las rutas van en un sentido
-        self.assertIsNone(self.red.viaje("A", "CALLE 80"))          # no hay conexión
+        self.assertEqual(self.red.viaje("A", "D"), [("R1", "A", "D")])
+        self.assertEqual(self.red.viaje("A", "E"), [("R3", "A", "E")])
+        # A -> F: R1 hasta C (2) + R2 hasta F (2) = 4, contra R3 A->E (1) + R2 E->F (1) = 2
+        self.assertEqual(self.red.viaje("A", "F"), [("R3", "A", "E"), ("R2", "E", "F")])
+        self.assertIsNone(self.red.viaje("D", "A"))                  # las rutas van en un sentido
+        self.assertIsNone(self.red.viaje("A", "CALLE 80"))           # no hay conexión
         self.assertEqual(self.red.viaje("A", "A"), [])
         self.red.cerrar("E")                                         # ya no se transborda en E
-        self.assertEqual(self.red.viaje("A", "F"), [("R1", "A", "C", 2), ("R2", "C", "F", 2)])
+        self.assertEqual(self.red.viaje("A", "F"), [("R1", "A", "C"), ("R2", "C", "F")])
         self.red.cerrar("C")
         self.assertIsNone(self.red.viaje("A", "F"))
-        self.assertEqual(self.red.viaje("A", "D"), [("R1", "A", "D", 3)])   # pasa por C sin parar
+        self.assertEqual(self.red.viaje("A", "D"), [("R1", "A", "D")])    # pasa por C sin parar
 
     # R6
     def test_ranking(self):
         # buses: A=4 (R1:3, R3:1), CALLE 26=4, C=3, E=2, B=1, CALLE 45=1
-        self.assertEqual(self.red.ranking(3), ["A", "CALLE 26", "C"])
+        self.assertEqual(self.red.ranking(3), [("A", 4), ("CALLE 26", 4), ("C", 3)])
         self.red.cerrar("A")
-        self.assertEqual(self.red.ranking(3), ["CALLE 26", "C", "E"])
+        self.assertEqual(self.red.ranking(3), [("CALLE 26", 4), ("C", 3), ("E", 2)])
         self.red.quitar_parada("R4", "CALLE 26")
-        self.assertEqual(self.red.ranking(2), ["C", "E"])
+        self.assertEqual(self.red.ranking(2), [("C", 3), ("E", 2)])
         self.red.deshacer()
-        self.assertEqual(self.red.ranking(1), ["CALLE 26"])
+        self.assertEqual(self.red.ranking(1), [("CALLE 26", 4)])
         self.assertEqual(self.red.ranking(0), [])
 
     # R7
@@ -139,21 +138,21 @@ class TestRed(unittest.TestCase):
         self.assertEqual(self.red.recorrido("R1"), ["F", "A", "B", "E", "C", "D"])
         self.assertTrue(self.red.agregar_parada("R1", "NUEVA", "D"))
         self.assertEqual(self.red.recorrido("R1")[-1], "NUEVA")
-        self.assertEqual(self.red.estado("NUEVA"), (True, True))
+        self.assertEqual(self.red.estado("NUEVA"), "ABIERTA")
         self.assertFalse(self.red.agregar_parada("R1", "A", "B"))      # ya está en la ruta
         self.assertFalse(self.red.agregar_parada("R1", "X", "Z"))      # despues_de no está
         self.assertFalse(self.red.agregar_parada("R9", "X", "A"))      # ruta no existe
         self.assertTrue(self.red.quitar_parada("R1", "C"))
         self.assertEqual(self.red.recorrido("R1"), ["F", "A", "B", "E", "D", "NUEVA"])
         self.assertFalse(self.red.quitar_parada("R1", "C"))
-        self.assertIsNone(self.red.recorrido("R9"))
+        self.assertEqual(self.red.recorrido("R9"), [])
         # A -> E: ahora también por R1 (2 paradas), pero R3 sigue siendo mejor (1)
-        self.assertEqual(self.red.viaje("A", "E"), [("R3", "A", "E", 1)])
+        self.assertEqual(self.red.viaje("A", "E"), [("R3", "A", "E")])
 
     def test_quitar_parada_afecta_viaje_y_bus(self):
         self.red.quitar_parada("R1", "C")
         self.assertIsNone(self.red.proximo_bus("C", "R1", "06:00"))
-        self.assertEqual(self.red.viaje("A", "D"), [("R1", "A", "D", 2)])
+        self.assertEqual(self.red.viaje("A", "D"), [("R1", "A", "D")])
 
     # R9
     def test_deshacer_rehacer(self):
@@ -164,18 +163,18 @@ class TestRed(unittest.TestCase):
         self.assertEqual(self.red.recorrido("R1"), ["A", "B", "C", "D"])
         self.assertTrue(self.red.deshacer())
         self.assertEqual(self.red.recorrido("R2"), ["C", "E", "F"])
-        self.assertEqual(self.red.estado("NUEVA"), (False, False))      # se deshizo su creación
+        self.assertEqual(self.red.estado("NUEVA"), "NO EXISTE")      # se deshizo su creación
         self.assertEqual(self.red.autocompletar("NUE", 5), [])
         self.assertTrue(self.red.rehacer())
         self.assertEqual(self.red.recorrido("R2"), ["C", "E", "NUEVA", "F"])
         self.assertTrue(self.red.deshacer())
         self.assertTrue(self.red.deshacer())
-        self.assertEqual(self.red.estado("B"), (True, True))
+        self.assertEqual(self.red.estado("B"), "ABIERTA")
         self.assertFalse(self.red.deshacer())
         self.red.cerrar("D")                                             # cambio nuevo
         self.assertFalse(self.red.rehacer())                             # borró lo de rehacer
         self.assertTrue(self.red.deshacer())
-        self.assertEqual(self.red.estado("D"), (True, True))
+        self.assertEqual(self.red.estado("D"), "ABIERTA")
 
     def test_cambios_fallidos_no_se_registran(self):
         self.assertFalse(self.red.reabrir("A"))      # ya estaba abierta
@@ -183,23 +182,26 @@ class TestRed(unittest.TestCase):
 
 
 class TestFila(unittest.TestCase):
+    def test_ejemplo_enunciado(self):
+        self.assertEqual(simular_fila([30, 5, 5, 70], 60, 2), [120, 60, 60, 120])
+
     def test_basico(self):
         self.assertEqual(simular_fila([0, 0, 1, 2, 2, 3, 10, 10, 11], 5, 2),
-                         [0, 0, 4, 3, 8, 7, 5, 5, 9])
+                         [5, 5, 10, 10, 15, 15, 20, 20, 25])
 
     def test_desordenado_y_vacio(self):
-        self.assertEqual(simular_fila([3, 1, 2], 5, 1), [12, 4, 8])
+        self.assertEqual(simular_fila([3, 1, 2], 5, 1), [15, 5, 10])
         self.assertEqual(simular_fila([], 5, 1), [])
 
     def test_hueco_largo(self):
-        self.assertEqual(simular_fila([0, 1000], 5, 10), [0, 0])
+        self.assertEqual(simular_fila([0, 1000], 5, 10), [5, 1000])
 
     def test_grande(self):
         rnd = random.Random(3)
         llegadas = sorted(rnd.randint(0, 3600) for _ in range(200000))
-        esperas = simular_fila(llegadas, 60, 150)
-        self.assertEqual(len(esperas), 200000)
-        self.assertTrue(all(e >= 0 for e in esperas))
+        salidas = simular_fila(llegadas, 60, 150)
+        self.assertEqual(len(salidas), 200000)
+        self.assertTrue(all(s >= l and s % 60 == 0 for l, s in zip(llegadas, salidas)))
 
 
 if __name__ == "__main__":
