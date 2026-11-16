@@ -62,7 +62,7 @@
   @keyframes splash-reveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .splash-kicker { display: flex; justify-content: space-between; gap: 16px; border-top: 1px solid rgba(242,240,234,.45);
     padding-top: 10px; color: #E5E2D9; font: 700 11px/1.2 var(--f-titulo); letter-spacing: .14em; text-transform: uppercase; }
-  .splash-title { display: block; margin: clamp(18px, 4vh, 44px) 0 0; font: 800 clamp(84px, 19vw, 260px)/.78 var(--f-titulo);
+  .splash-title { display: block; text-align: center; margin: clamp(18px, 4vh, 44px) 0 0; font: 800 clamp(84px, 19vw, 260px)/.78 var(--f-titulo);
     letter-spacing: -.04em; text-transform: uppercase; white-space: nowrap; color: #F2F0EA;
     background-image: url("/fondo_mapa.jpg"); background-position: 48% 50%; background-size: cover;
     background-blend-mode: screen; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
@@ -71,6 +71,12 @@
     border-top: 1px solid rgba(242,240,234,.45); padding-top: 11px; }
   .splash-country { margin: 0; font: 700 clamp(16px, 2.2vw, 26px)/1 var(--f-titulo); letter-spacing: .26em; text-transform: uppercase; }
   .splash-caption { margin: 0; color: #D3D6D2; font: 600 11px/1.35 var(--f-texto); letter-spacing: .08em; text-align: right; text-transform: uppercase; }
+  @media (max-width: 600px) {   /* celular: todo centrado y "Bogotá" ocupando el ancho */
+    .splash-kicker, .splash-footer { flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+    .splash-title { font-size: 31vw; }
+    .splash-country { letter-spacing: .18em; }
+    .splash-caption { text-align: center; }
+  }
 
   /* ---------- skeleton loaders */
   .skeleton { position: relative; overflow: hidden; border: 1px solid var(--borde); border-radius: 12px; background: var(--bg); margin-top: 12px; }
@@ -466,13 +472,13 @@
   <!-- ===================== R4 R5 R6 ===================== -->
   <section id="viajar" class="activa">
     <div class="portada-mini" aria-label="Bogotá en movimiento">
-      <figure class="portada-foto"><img src="/fotos/colpatria.jpg" alt="Torre Colpatria en Bogotá" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Torre Colpatria</figcaption></figure>
+      <figure class="portada-foto"><img src="/fotos/museo.jpg" data-r="https://commons.wikimedia.org/wiki/Special:FilePath/Entrada_del_Museo_Nacional_de_Colombia.jpg?width=500" alt="Museo Nacional de Colombia, Bogotá" decoding="async" onerror="if(this.dataset.r&&!this.dataset.t){this.dataset.t=1;this.src=this.dataset.r}else{this.closest('figure').classList.add('sin-foto')}"><figcaption>Museo Nacional</figcaption></figure>
       <div class="portada-mini-txt">
         <div class="portada-mini-kicker">BOGOTÁ · COLOMBIA <span>· RED TRONCAL</span></div>
         <h1>Bogotá, en movimiento.</h1>
         <p>Planea tu recorrido directo o con transbordo en segundos sobre la red troncal de TransMilenio.</p>
       </div>
-      <figure class="portada-foto"><img src="/fotos/plaza.jpg" alt="Plaza de Bolívar en Bogotá" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Plaza de Bolívar</figcaption></figure>
+      <figure class="portada-foto"><img src="/fotos/plaza.jpg" data-r="https://commons.wikimedia.org/wiki/Special:FilePath/CatedralPrimadaBogota2004-7.jpg?width=500" alt="Catedral Primada en la Plaza de Bolívar, Bogotá" decoding="async" onerror="if(this.dataset.r&&!this.dataset.t){this.dataset.t=1;this.src=this.dataset.r}else{this.closest('figure').classList.add('sin-foto')}"><figcaption>Plaza de Bolívar</figcaption></figure>
     </div>
     <div class="bloque">
       <div class="viajar-grid">
@@ -644,9 +650,9 @@
           <span class="suave" style="font-size:12px">Secuencias reales extraídas del motor GTFS (sin escala).</span>
         </div>
         <div class="editorial-fotos">
-          <figure><img src="/fotos/colpatria.jpg" alt="Torre Colpatria en Bogotá" loading="lazy" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Torre Colpatria</figcaption></figure>
-          <figure><img src="/fotos/plaza.jpg" alt="Plaza de Bolívar en Bogotá" loading="lazy" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Plaza de Bolívar</figcaption></figure>
-          <figure><img src="/fotos/museo.jpg" alt="Museo Nacional en Bogotá" loading="lazy" decoding="async" onerror="this.closest('figure').classList.add('sin-foto')"><figcaption>Museo Nacional</figcaption></figure>
+          <figure><img src="/fotos/colpatria.jpg" alt="Torre Colpatria en Bogotá" loading="lazy" decoding="async" onerror="if(this.dataset.r&&!this.dataset.t){this.dataset.t=1;this.src=this.dataset.r}else{this.closest('figure').classList.add('sin-foto')}"><figcaption>Torre Colpatria</figcaption></figure>
+          <figure><img src="/fotos/plaza.jpg" data-r="https://commons.wikimedia.org/wiki/Special:FilePath/CatedralPrimadaBogota2004-7.jpg?width=500" alt="Catedral Primada en la Plaza de Bolívar, Bogotá" loading="lazy" decoding="async" onerror="if(this.dataset.r&&!this.dataset.t){this.dataset.t=1;this.src=this.dataset.r}else{this.closest('figure').classList.add('sin-foto')}"><figcaption>Plaza de Bolívar</figcaption></figure>
+          <figure><img src="/fotos/museo.jpg" data-r="https://commons.wikimedia.org/wiki/Special:FilePath/Entrada_del_Museo_Nacional_de_Colombia.jpg?width=500" alt="Museo Nacional de Colombia, Bogotá" loading="lazy" decoding="async" onerror="if(this.dataset.r&&!this.dataset.t){this.dataset.t=1;this.src=this.dataset.r}else{this.closest('figure').classList.add('sin-foto')}"><figcaption>Museo Nacional</figcaption></figure>
         </div>
       </div>
     </div>
@@ -661,6 +667,7 @@
         <b>Planeador TransMilenio · Red Troncal</b>
       </div>
       <span>124 estaciones · 89 rutas · Datos reales GTFS (julio 2021)</span>
+      <span>Fotos: Wikimedia Commons · Catedral Primada, Kinori (dominio público) · Museo Nacional, Peter Angritt (CC BY-SA)</span>
     </div>
     <div class="pie-col" style="flex:1 1 380px; min-width:0">
       <span><b>Proyecto final:</b> Estructuras de Datos y Algoritmos</span>
@@ -1426,7 +1433,7 @@ function descargarCSV() {
 }
 // DESCARGA-FIN
 
-// Las fotos de Bogotá viven en app/fotos/ (colpatria.jpg, plaza.jpg, museo.jpg) y las sirve servidor.py en /fotos/
+// Fotos: primero app/fotos/<nombre>.jpg (las sirve servidor.py en /fotos/); si no existe, Commons (data-r); si falla, recuadro gris
 
 document.querySelector('nav button[data-p="datos"]').addEventListener("click", cargarDatos);
 const refrescarOriginal = refrescar;
