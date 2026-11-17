@@ -10,7 +10,6 @@ Ninguna regla del sistema vive aquí: todo lo decide motor/.
 """
 
 import json
-import math
 import os
 import random
 import sys
@@ -58,7 +57,7 @@ def limpiar(texto):
 
 
 def todas():
-    return RED.rango("", "\uffff")
+    return RED.rango("", "￿")
 
 
 # ------------------------------------------------------------------ cada endpoint llama al motor
@@ -66,15 +65,9 @@ def api_info(q):
     return {"estaciones": RED.num_estaciones(), "rutas": RED.nombres_rutas(), "abiertas": todas()}
 
 
-def api_ping(q):
-    return {"ok": True}
-
-
 def api_estado(q):
     nombre = limpiar(q.get("nombre", ""))
-    estado = RED.estado(nombre)                                         # R1
-    existe = estado != "NO EXISTE"
-    abierta = estado == "ABIERTA"
+    existe, abierta = RED.estado(nombre)                                       # R1
     return {"nombre": nombre, "existe": existe, "abierta": abierta,
             "rutas": RED.rutas_de(nombre) if existe else [],
             "buses": RED.buses_al_dia(nombre)}
@@ -97,20 +90,12 @@ def api_proximo_bus(q):
 
 
 def api_viaje(q):
-    tramos = RED.viaje(q.get("origen", ""), q.get("destino", ""))          # R5
-    if not tramos:
-        return tramos
-    res = []
-    for ruta, sube, baja in tramos:
-        rec = RED.recorrido(ruta)
-        paradas = rec.index(baja) - rec.index(sube)
-        res.append([ruta, sube, baja, paradas])
-    return res
+    return RED.viaje(q.get("origen", ""), q.get("destino", ""))                    # R5
 
 
 def api_ranking(q):
     top = RED.ranking(int(q.get("k", 10)))                                         # R6
-    return [{"nombre": nombre, "buses": buses} for nombre, buses in top]
+    return [{"nombre": e, "buses": RED.buses_al_dia(e)} for e in top]
 
 
 def api_recorrido(q):
@@ -124,7 +109,7 @@ def api_agregar_parada(q):
 
 
 def api_quitar_parada(q):
-    return RED.quitar_parada(q.get("ruta", ""), q.get("estacion", ""))             # R7
+    return RED.quitar_parada(q.get("ruta", ""), q.get("estacion", ""))            # R7
 
 
 def api_cerrar(q):
@@ -144,83 +129,27 @@ def api_rehacer(q):
 
 
 def api_fila(q):
-    pasajeros = max(1, int(float(q.get("pasajeros", 100000))))
-    ventana = max(0.01, float(q.get("ventana", 120)))
-    frecuencia = max(0.0001, float(q.get("frecuencia", 0.25)))
-    capacidad = max(1, int(float(q.get("capacidad", 250))))
-    buses_totales = -(-pasajeros // capacidad)
-
-    # Tope seguro de memoria y CPU para Render Free (máx 200,000 nodos en la Cola)
-    TOPE_P = 200_000
-    TOPE_PUNTOS_CURVA = 240
-
-    # Si los números son manejables en RAM y no requerirán millones de buses vacíos,
-    # usamos simular_fila() directamente o reescalando P y capacidad por el mismo factor:
-    escala = max(1.0, pasajeros / TOPE_P)
-    p_sim = int(round(pasajeros / escala))
-    cap_sim = int(round(capacidad / escala))
-    buses_estimados = pasajeros / capacidad
-
-    if cap_sim >= 1 and buses_estimados <= 500_000:
-        rnd = random.Random(0)
-        # Cuantiles exactos o muestra aleatoria ordenada de la distribución triangular
-        llegadas = sorted(rnd.triangular(0, ventana, ventana / 2) for _ in range(p_sim))
-        salidas = simular_fila(llegadas, frecuencia, cap_sim)                      # R10
-        esperas = [max(0.0, s - t) for t, s in zip(llegadas, salidas)]
-        paso_min = max(1.0, ventana / TOPE_PUNTOS_CURVA)
-        suma, cuenta = {}, {}
-        for t, e in zip(llegadas, esperas):
-            m = int(t // paso_min) * paso_min
-            suma[m] = suma.get(m, 0.0) + e
-            cuenta[m] = cuenta.get(m, 0) + 1
-        minutos = sorted(suma)
-        return {
-            "promedio": sum(esperas) / len(esperas),
-            "maxima": max(esperas),
-            "buses": buses_totales,
-            "curva": [[round(m, 2), suma[m] / cuenta[m]] for m in minutos],
-        }
-
-    # Si el profesor ingresa un número astronómico (ej. 10^12 pasajeros o 10^9 buses),
-    # generamos N cuantiles exactos de la distribución triangular (inversa de la CDF)
-    # y los pasamos por simular_fila() escalando el tiempo para que tarde < 5 ms:
-    n_muestra = 5000
-    # Inversa exacta de la distribución triangular simétrica en [0, ventana] con pico en ventana/2
-    llegadas_norm = []
-    for i in range(n_muestra):
-        u = (i + 0.5) / n_muestra
-        if u < 0.5:
-            t_val = ventana * math.sqrt(u / 2.0)
-        else:
-            t_val = ventana * (1.0 - math.sqrt((1.0 - u) / 2.0))
-        llegadas_norm.append(t_val)
-
-    # Cada uno de los n_muestra representa (pasajeros / n_muestra) personas.
-    # Equivale a que 1 unidad de capacidad en la muestra = (capacidad * n_muestra / pasajeros)
-    # Para usar simular_fila() con capacidad entera = 1, escalamos la frecuencia efectiva:
-    frec_efectiva = frecuencia * (pasajeros / (n_muestra * capacidad))
-    salidas = simular_fila(llegadas_norm, frec_efectiva, 1)                        # R10
-    esperas = [max(0.0, s - t) for t, s in zip(llegadas_norm, salidas)]
-
-    paso_min = max(1.0, ventana / min(TOPE_PUNTOS_CURVA, int(ventana) or 1))
+    pasajeros = int(q.get("pasajeros", 100000))
+    ventana = float(q.get("ventana", 120))
+    frecuencia = float(q.get("frecuencia", 0.25))
+    capacidad = int(q.get("capacidad", 250))
+    rnd = random.Random(0)
+    # llegadas con un pico a la mitad de la ventana (más gente en la hora pico)
+    llegadas = sorted(rnd.triangular(0, ventana, ventana / 2) for _ in range(pasajeros))
+    esperas = simular_fila(llegadas, frecuencia, capacidad)                        # R10
     suma, cuenta = {}, {}
-    for t, e in zip(llegadas_norm, esperas):
-        m = int(t // paso_min) * paso_min
-        suma[m] = suma.get(m, 0.0) + e
+    for t, e in zip(llegadas, esperas):
+        m = int(t)
+        suma[m] = suma.get(m, 0) + e
         cuenta[m] = cuenta.get(m, 0) + 1
     minutos = sorted(suma)
-    return {
-        "promedio": sum(esperas) / len(esperas),
-        "maxima": max(esperas),
-        "buses": buses_totales,
-        "curva": [[round(m, 2), suma[m] / cuenta[m]] for m in minutos],
-    }
+    return {"promedio": sum(esperas) / len(esperas), "maxima": max(esperas),
+            "buses": -(-pasajeros // capacidad),
+            "curva": [[m, suma[m] / cuenta[m]] for m in minutos]}
 
 
 def api_medir(q):
-    # Limitar tamaños máximos para evitar que un tamaño absurdo en R11 agote los 512MB de Render
-    tamanos_raw = [int(x) for x in q.get("tamanos", "1000,2000,4000,8000").split(",") if x.strip()]
-    tamanos = sorted(min(max(10, x), 32000) for x in tamanos_raw[:6])
+    tamanos = sorted(int(x) for x in q.get("tamanos", "1000,2000,4000,8000").split(",") if x.strip())
     filas = medir(tamanos, veces=1500)                                             # R11
     res = {}
     for op, n, us, esp, texto in filas:
@@ -302,12 +231,12 @@ RUTAS = {name[4:]: f for name, f in list(globals().items()) if name.startswith("
 
 
 class Manejador(BaseHTTPRequestHandler):
-    def _enviar(self, codigo, cuerpo, tipo, cache="no-store"):
+    def _enviar(self, codigo, cuerpo, tipo):
         datos = cuerpo.encode("utf-8") if isinstance(cuerpo, str) else cuerpo
         self.send_response(codigo)
         self.send_header("Content-Type", tipo)
         self.send_header("Content-Length", str(len(datos)))
-        self.send_header("Cache-Control", cache)
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
         self.wfile.write(datos)
 
@@ -316,21 +245,20 @@ class Manejador(BaseHTTPRequestHandler):
         if url.path in ("/", "/index.html"):
             with open(os.path.join(AQUI, "index.html"), encoding="utf-8") as f:
                 return self._enviar(200, f.read(), "text/html; charset=utf-8")
-        if url.path == "/fondo_mapa.jpg":
+        if url.path == "/fondo_mapa.jpg":                 # fondo del mapa (© colaboradores de OpenStreetMap)
             with open(os.path.join(AQUI, "fondo_mapa.jpg"), "rb") as f:
-                return self._enviar(200, f.read(), "image/jpeg", "public, max-age=86400")
-        if url.path == "/icono.ico":
-            with open(os.path.join(AQUI, "icono.ico"), "rb") as f:
-                return self._enviar(200, f.read(), "image/png", "public, max-age=86400")
-        if url.path.startswith("/fotos/"):                  # fotos de Bogotá: app/fotos/<nombre>
-            nombre = os.path.basename(url.path)             # solo el nombre del archivo, nada de carpetas
-            tipos = {".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
-            ruta = os.path.join(AQUI, "fotos", nombre)
-            tipo = tipos.get(os.path.splitext(nombre)[1].lower())
-            if tipo and os.path.isfile(ruta):
-                with open(ruta, "rb") as f:
-                    return self._enviar(200, f.read(), tipo, "public, max-age=86400")
-            return self._enviar(404, "No encontrado", "text/plain; charset=utf-8")
+                return self._enviar(200, f.read(), "image/jpeg")
+        activos = {
+            "/assets/logo-transmitracker.png": ("logo-transmitracker.png", "image/png"),
+            "/assets/concrete-reference.png": ("concrete-reference.png", "image/png"),
+            "/assets/bogota-colpatria.jpg": ("bogota-colpatria.jpg", "image/jpeg"),
+            "/assets/bogota-plaza-bolivar.jpg": ("bogota-plaza-bolivar.jpg", "image/jpeg"),
+            "/assets/bogota-transmilenio.jpg": ("bogota-transmilenio.jpg", "image/jpeg"),
+        }
+        if url.path in activos:
+            nombre_archivo, tipo = activos[url.path]
+            with open(os.path.join(AQUI, "assets", nombre_archivo), "rb") as f:
+                return self._enviar(200, f.read(), tipo)
         if url.path.startswith("/api/"):
             nombre = url.path[5:]
             funcion = RUTAS.get(nombre)
@@ -338,7 +266,7 @@ class Manejador(BaseHTTPRequestHandler):
                 return self._enviar(404, json.dumps({"error": "no existe"}), "application/json")
             q = {k: v[0] for k, v in parse_qs(url.query, keep_blank_values=True).items()}
             try:
-                if nombre in ("medir", "fila"):            # no tocan RED: no bloquean a los demás
+                if nombre == "medir":                      # tarda: no bloquea a los demás
                     resultado = funcion(q)
                 else:
                     with CANDADO:
@@ -355,22 +283,17 @@ class Manejador(BaseHTTPRequestHandler):
 
 
 def main():
-    en_render = "PORT" in os.environ          # Render define PORT; en tu PC no existe
-    puerto = int(os.environ.get("PORT", 8501))
-    host = "0.0.0.0" if en_render else "127.0.0.1"
+    puerto = 8501
     while True:
         try:
-            servidor = ThreadingHTTPServer((host, puerto), Manejador)
+            servidor = ThreadingHTTPServer(("127.0.0.1", puerto), Manejador)
             break
         except OSError:
-            if en_render:
-                raise                         # en Render no cambiamos de puerto
             puerto += 1
     url = "http://localhost:%d" % puerto
-    print("Red cargada: %d estaciones, %d rutas" % (RED.num_estaciones(), len(RED.nombres_rutas())), flush=True)
-    print("App lista en", url, "  (Ctrl + C para cerrar)", flush=True)
-    if not en_render:                         # abrir el navegador solo tiene sentido en tu PC
-        threading.Timer(0.8, lambda: webbrowser.open(url)).start()
+    print("Red cargada: %d estaciones, %d rutas" % (RED.num_estaciones(), len(RED.nombres_rutas())))
+    print("App lista en", url, "  (Ctrl + C para cerrar)")
+    threading.Timer(0.8, lambda: webbrowser.open(url)).start()
     try:
         servidor.serve_forever()
     except KeyboardInterrupt:
