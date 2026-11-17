@@ -8,3 +8,5 @@
 | David Eduardo Diaz Arciniegas | Sarchyx | R5, la app y el panel de rendimiento (R11) |
 
 R12 (README): cada uno escribió la sección de sus requisitos y Santiago consolidó la documentación final del contrato y despliegue.
+
+> **Nota sobre el historial de Git:** El usuario `claude` que aparece como co-autor en los primeros commits corresponde únicamente a asistencia de herramienta de IA utilizada por `Juanavur` durante la configuración inicial y el desarrollo de sus módulos; los cuatro integrantes del grupo somos únicamente las personas listadas en la tabla superior.
