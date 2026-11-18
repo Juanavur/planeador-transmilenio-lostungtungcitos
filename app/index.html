@@ -301,7 +301,7 @@ try {
   .segmentos { border-radius: 2px; }
   .segmentos button { border-radius: 0; }
   .tabla-caja { border-radius: 2px; }
-  .toast { border-radius: 2px; background: var(--texto); }
+  .toast { border-radius: 2px; background: var(--texto); color: var(--bg); }
   ::selection { color: #fff; background: var(--rojo); }
   input::placeholder { color: var(--placeholder); opacity: 1; }
   body, .barra, nav#pestanas, .bloque, input, select, button, .mapa-caja, .m-viaje, .grafica,
@@ -646,8 +646,8 @@ try {
    :root[data-theme="dark"] #hero-map-svg .map-node { fill:#2B2D31; stroke:#F2F0EA; }
    :root[data-theme="dark"] #hero-context-body { color:#F2F0EA; }
    #hero-context-body { min-height:0; flex:1; display:flex; flex-direction:column; justify-content:center; gap:10px; color:#202124; }
-   #hero-context-body .context-title { margin:0; font:800 clamp(22px,2.5vw,34px)/.96 var(--f-titulo); text-transform:uppercase; }
-   #hero-context-body .context-copy { margin:0; max-width:50ch; font-size:13px; line-height:1.45; }
+   #hero-context-body .context-title { color:inherit; margin:0; font:800 clamp(22px,2.5vw,34px)/.96 var(--f-titulo); text-transform:uppercase; }
+   #hero-context-body .context-copy { color:inherit; margin:0; max-width:50ch; font-size:13px; line-height:1.45; }
    #hero-context-body .context-routes { display:flex; flex-wrap:wrap; gap:5px; }
    #hero-context-body .context-chart { width:100%; min-height:110px; max-height:150px; }
    #hero-context-body .context-chart svg { width:100%; height:100%; display:block; }
