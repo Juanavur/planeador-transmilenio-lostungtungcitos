@@ -40,11 +40,13 @@ EXPLICACION = {
                                  "si el rango fuera fijo en nombres, m crecería con n.",
     "R4 proximo_bus": "Búsqueda binaria sobre las horas de UNA ruta en UNA estación (h). h no crece al duplicar la red.",
     "R5 viaje (no se califica)": "Depende del largo de las rutas que tocan origen y destino, no de n.",
-    "R6 ranking (k=10)": "El arreglo ordenado está guardado; solo se leen k elementos.",
+    "R6 ranking (k=10)": "El arreglo ordenado está guardado; se leen k resultados y se saltan las estaciones cerradas.",
+    "R6 ranking (reconstruccion tras editar)": "La primera consulta tras editar una ruta reconstruye el ranking con merge sort: O(n log n).",
     "R7 agregar + quitar parada": "Lista doble + tabla de nodos: se cambian punteros, nada más.",
     "R8 cerrar + reabrir": "Cambiar una bandera después de una consulta a la tabla hash.",
     "R9 deshacer + rehacer": "Sacar y meter en una pila de nodos.",
-    "R10 simular_fila (50n pasajeros)": "Cada pasajero entra y sale de la cola una vez: lineal en P.",
+    "R10 simular_fila (P=10n, salidas en segundos)": "Con llegadas ordenadas, cada pasajero entra y sale una vez; el resultado es el segundo de salida asignado.",
+    "R10 simular_fila (P=10n, llegadas desordenadas)": "Incluye merge sort O(P log P); la asignación FIFO es O(P + B).",
 }
 
 
@@ -67,7 +69,9 @@ def api_info(q):
 
 def api_estado(q):
     nombre = limpiar(q.get("nombre", ""))
-    existe, abierta = RED.estado(nombre)                                       # R1
+    estado = RED.estado(nombre)                                                # R1
+    existe = estado != "NO EXISTE"
+    abierta = estado == "ABIERTA"
     return {"nombre": nombre, "existe": existe, "abierta": abierta,
             "rutas": RED.rutas_de(nombre) if existe else [],
             "buses": RED.buses_al_dia(nombre)}
@@ -90,12 +94,23 @@ def api_proximo_bus(q):
 
 
 def api_viaje(q):
-    return RED.viaje(q.get("origen", ""), q.get("destino", ""))                    # R5
+    plan = RED.viaje(q.get("origen", ""), q.get("destino", ""))
+    if plan is None or len(plan) == 0:
+        return plan
+    # El contrato del motor entrega tramos de tres campos. La vista conserva su
+    # contador de paradas como dato derivado, sin alterar el resultado de R5.
+    vista = []
+    for ruta, sube, baja in plan:
+        recorrido = RED.recorrido(ruta)
+        desde = recorrido.index(sube)
+        hasta = recorrido.index(baja)
+        vista.append((ruta, sube, baja, hasta - desde))
+    return vista
 
 
 def api_ranking(q):
     top = RED.ranking(int(q.get("k", 10)))                                         # R6
-    return [{"nombre": e, "buses": RED.buses_al_dia(e)} for e in top]
+    return [{"nombre": nombre, "buses": buses} for nombre, buses in top]
 
 
 def api_recorrido(q):
@@ -130,27 +145,29 @@ def api_rehacer(q):
 
 def api_fila(q):
     pasajeros = int(q.get("pasajeros", 100000))
-    ventana = float(q.get("ventana", 120))
-    frecuencia = float(q.get("frecuencia", 0.25))
+    if pasajeros <= 0:
+        raise ValueError("pasajeros debe ser positivo")
+    ventana = int(q.get("ventana", 7200))
+    frecuencia = int(q.get("frecuencia", 15))
     capacidad = int(q.get("capacidad", 250))
     rnd = random.Random(0)
-    # llegadas con un pico a la mitad de la ventana (más gente en la hora pico)
-    llegadas = sorted(rnd.triangular(0, ventana, ventana / 2) for _ in range(pasajeros))
-    esperas = simular_fila(llegadas, frecuencia, capacidad)                        # R10
+    # Llegadas enteras en segundos, con un pico a la mitad de la ventana.
+    llegadas = sorted(int(rnd.triangular(0, ventana, ventana / 2)) for _ in range(pasajeros))
+    salidas = simular_fila(llegadas, frecuencia, capacidad)                        # R10
     suma, cuenta = {}, {}
-    for t, e in zip(llegadas, esperas):
-        m = int(t)
-        suma[m] = suma.get(m, 0) + e
-        cuenta[m] = cuenta.get(m, 0) + 1
-    minutos = sorted(suma)
-    return {"promedio": sum(esperas) / len(esperas), "maxima": max(esperas),
-            "buses": -(-pasajeros // capacidad),
-            "curva": [[m, suma[m] / cuenta[m]] for m in minutos]}
+    for llegada, salida in zip(llegadas, salidas):
+        minuto_llegada = llegada // 60
+        suma[minuto_llegada] = suma.get(minuto_llegada, 0) + salida
+        cuenta[minuto_llegada] = cuenta.get(minuto_llegada, 0) + 1
+    minutos_llegada = sorted(suma)
+    return {"salida_promedio": sum(salidas) / len(salidas), "ultima_salida": max(salidas),
+            "buses": len(set(salidas)),
+            "curva": [[m, suma[m] / cuenta[m]] for m in minutos_llegada]}
 
 
 def api_medir(q):
-    tamanos = sorted(int(x) for x in q.get("tamanos", "1000,2000,4000,8000").split(",") if x.strip())
-    filas = medir(tamanos, veces=1500)                                             # R11
+    tamanos = sorted(int(x) for x in q.get("tamanos", "10000,20000,40000,80000").split(",") if x.strip())
+    filas = medir(tamanos, veces=250)                                              # R11
     res = {}
     for op, n, us, esp, texto in filas:
         res.setdefault(op, {"complejidad": texto, "explicacion": EXPLICACION.get(op, ""), "puntos": []})
