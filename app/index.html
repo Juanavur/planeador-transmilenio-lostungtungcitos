@@ -886,10 +886,10 @@ try {
       <div class="cabeza"><h2>¿Cuánto toca esperar en hora pico?</h2><span class="req">R10</span></div>
       <p class="ayuda">Imagina una estación llena: la gente llega, hace fila y sube en orden cuando pasa el bus. Cambia los números y mira cómo crece la espera.</p>
       <div class="fila">
-        <label for="f-pasajeros">Personas que llegan<input id="f-pasajeros" type="number" value="100000" min="1"></label>
-        <label for="f-ventana">Llegan durante (min)<input id="f-ventana" type="number" value="120" min="1"></label>
-        <label for="f-frecuencia">Un bus cada (min)<input id="f-frecuencia" type="number" value="0.25" step="0.05" min="0.05"></label>
-        <label for="f-capacidad">Cupo por bus<input id="f-capacidad" type="number" value="250" min="1"></label>
+        <label for="f-pasajeros">Personas que llegan<input id="f-pasajeros" type="number" value="100000" min="1" max="1000000"></label>
+        <label for="f-ventana">Llegan durante (min)<input id="f-ventana" type="number" value="120" min="1" max="1440"></label>
+        <label for="f-frecuencia">Un bus cada (min)<input id="f-frecuencia" type="number" value="0.25" step="0.05" min="0.05" max="60"></label>
+        <label for="f-capacidad">Cupo por bus<input id="f-capacidad" type="number" value="250" min="1" max="2000"></label>
         <button class="principal" id="f-boton" onclick="simular()">Ver la espera</button>
       </div>
       <div id="f-resultado"><p class="suave" style="margin:14px 0 0">Un biarticulado lleva unas 250 personas. Con un bus cada
@@ -1314,12 +1314,30 @@ async function cambio(tipo) {
 }
 
 // ---------- R10
+const LIMITES_FILA = {
+  "f-pasajeros": ["Personas que llegan", 1, 1000000],
+  "f-ventana": ["Llegan durante (min)", 1, 1440],
+  "f-frecuencia": ["Un bus cada (min)", 0.05, 60],
+  "f-capacidad": ["Cupo por bus", 1, 2000]
+};
+function validarFila() {
+  for (const [id, [nombre, min, max]] of Object.entries(LIMITES_FILA)) {
+    const v = Number($(id).value);
+    if (!Number.isFinite(v) || v < min || v > max) {
+      return `${nombre} debe estar entre ${min.toLocaleString("es-CO")} y ${max.toLocaleString("es-CO")}.`;
+    }
+  }
+  return null;
+}
 async function simular() {
+  const errorFila = validarFila();
+  if (errorFila) { $("f-resultado").innerHTML = `<div class="aviso mal">${esc(errorFila)}</div>`; return; }
   RESULTADO_FILA = null; actualizarContextoPortada();
   $("f-boton").disabled = true; $("f-resultado").innerHTML = skeletonMarkup("table", 4);
   try {
-    const r = await api("fila", {pasajeros: $("f-pasajeros").value, ventana: $("f-ventana").value,
-                                 frecuencia: $("f-frecuencia").value, capacidad: $("f-capacidad").value});
+    const espera = new Promise((_, no) => setTimeout(() => no({error: "La simulación tardó demasiado. Prueba con menos personas."}), 45000));
+    const r = await Promise.race([api("fila", {pasajeros: $("f-pasajeros").value, ventana: $("f-ventana").value,
+                                 frecuencia: $("f-frecuencia").value, capacidad: $("f-capacidad").value}), espera]);
     RESULTADO_FILA = r; actualizarContextoPortada();
     $("f-resultado").innerHTML = `<div class="metricas">
         <div class="metrica"><span>Espera promedio</span><b>${r.promedio.toFixed(1)} min</b></div>
@@ -1327,6 +1345,8 @@ async function simular() {
         <div class="metrica"><span>Buses necesarios</span><b>${r.buses.toLocaleString("es-CO")}</b></div></div>
       <p class="suave" style="margin:18px 0 4px">Espera promedio según el minuto en que llegó la persona</p>
       ${grafica([{puntos: r.curva, color: "var(--rojo)", area: true}], "minuto de llegada", "min", 920, 260)}`;
+  } catch (e) {
+    $("f-resultado").innerHTML = `<div class="aviso mal">${esc((e && e.error) || "No se pudo calcular la espera.")}</div>`;
   } finally { $("f-boton").disabled = false; }
 }
 
