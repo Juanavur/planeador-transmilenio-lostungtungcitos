@@ -70,8 +70,11 @@ def api_info(q):
 def api_estado(q):
     nombre = limpiar(q.get("nombre", ""))
     estado = RED.estado(nombre)                                                # R1
-    existe = estado != "NO EXISTE"
-    abierta = estado == "ABIERTA"
+    if isinstance(estado, tuple):
+        existe, abierta = estado
+    else:
+        existe = estado != "NO EXISTE"
+        abierta = estado == "ABIERTA"
     return {"nombre": nombre, "existe": existe, "abierta": abierta,
             "rutas": RED.rutas_de(nombre) if existe else [],
             "buses": RED.buses_al_dia(nombre)}
@@ -94,23 +97,30 @@ def api_proximo_bus(q):
 
 
 def api_viaje(q):
-    plan = RED.viaje(q.get("origen", ""), q.get("destino", ""))
+    plan = RED.viaje(q.get("origen", ""), q.get("destino", ""))                # R5
     if plan is None or len(plan) == 0:
         return plan
-    # El contrato del motor entrega tramos de tres campos. La vista conserva su
-    # contador de paradas como dato derivado, sin alterar el resultado de R5.
     vista = []
-    for ruta, sube, baja in plan:
-        recorrido = RED.recorrido(ruta)
-        desde = recorrido.index(sube)
-        hasta = recorrido.index(baja)
-        vista.append((ruta, sube, baja, hasta - desde))
+    for tramo in plan:
+        if len(tramo) == 4:
+            vista.append(tramo)
+        else:
+            ruta, sube, baja = tramo
+            recorrido = RED.recorrido(ruta)
+            vista.append((ruta, sube, baja, recorrido.index(baja) - recorrido.index(sube)))
     return vista
 
 
 def api_ranking(q):
-    top = RED.ranking(int(q.get("k", 10)))                                         # R6
-    return [{"nombre": nombre, "buses": buses} for nombre, buses in top]
+    top = RED.ranking(int(q.get("k", 10)))                                     # R6
+    res = []
+    for item in top:
+        if isinstance(item, str):
+            res.append({"nombre": item, "buses": RED.buses_al_dia(item)})
+        else:
+            nombre, buses = item
+            res.append({"nombre": nombre, "buses": buses})
+    return res
 
 
 def api_recorrido(q):
@@ -147,9 +157,9 @@ def api_fila(q):
     pasajeros = int(q.get("pasajeros", 100000))
     if pasajeros <= 0:
         raise ValueError("pasajeros debe ser positivo")
-    ventana = int(q.get("ventana", 7200))
-    frecuencia = int(q.get("frecuencia", 15))
-    capacidad = int(q.get("capacidad", 250))
+    ventana = int(float(q.get("ventana", 7200)))
+    frecuencia = float(q.get("frecuencia", 15))  # o int(float(...)) si motor/ exige int
+    capacidad = int(float(q.get("capacidad", 250)))
     rnd = random.Random(0)
     # Llegadas enteras en segundos, con un pico a la mitad de la ventana.
     llegadas = sorted(int(rnd.triangular(0, ventana, ventana / 2)) for _ in range(pasajeros))
