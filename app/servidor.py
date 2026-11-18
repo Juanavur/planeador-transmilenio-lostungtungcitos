@@ -277,6 +277,10 @@ def api_mapa(q):
     return {"estaciones": estaciones, "rutas": rutas}
 
 
+def api_ping(q):
+    return {"ok": True}
+
+
 RUTAS = {name[4:]: f for name, f in list(globals().items()) if name.startswith("api_")}
 
 
