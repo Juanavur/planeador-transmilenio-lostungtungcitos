@@ -9,8 +9,15 @@
 <link rel="preload" as="image" href="/fondo_mapa.jpg" fetchpriority="high">
 <link rel="icon" type="image/png" href="./assets/logo-transmitracker.png?v=2">
 <script>
-try { document.documentElement.dataset.theme = localStorage.getItem("transmitracker-theme") === "dark" ? "dark" : "light"; }
-catch (e) { document.documentElement.dataset.theme = "light"; }
+try {
+  const modo = localStorage.getItem("transmitracker-theme") || "auto";
+  const oscuroSistema = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.documentElement.dataset.themeMode = modo;
+  document.documentElement.dataset.theme = modo === "auto" ? (oscuroSistema ? "dark" : "light") : modo;
+} catch (e) {
+  document.documentElement.dataset.themeMode = "auto";
+  document.documentElement.dataset.theme = "light";
+}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700;800&display=swap">
@@ -932,22 +939,49 @@ catch (e) { document.documentElement.dataset.theme = "light"; }
 const $ = id => document.getElementById(id);
 const ICONO_SOL = '<svg class="icono-tema" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>';
 const ICONO_LUNA = '<svg class="icono-tema" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.2 15.3A8.5 8.5 0 0 1 8.7 3.8 8.5 8.5 0 1 0 20.2 15.3Z"></path></svg>';
-function establecerTema(tema, guardar = false) {
-  const oscuro = tema === "dark";
+const ICONO_AUTO = '<svg class="icono-tema" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v18a9 9 0 0 0 0-18Z" fill="currentColor"></path></svg>';
+const MEDIA_OSCURO = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+function establecerTema(modo, guardar = false) {
+  const modoValido = (modo === "light" || modo === "dark" || modo === "auto") ? modo : "auto";
+  const oscuro = modoValido === "auto" ? Boolean(MEDIA_OSCURO && MEDIA_OSCURO.matches) : modoValido === "dark";
+  document.documentElement.dataset.themeMode = modoValido;
   document.documentElement.dataset.theme = oscuro ? "dark" : "light";
   const boton = $("b-tema");
   if (boton) {
-    boton.innerHTML = oscuro ? ICONO_LUNA : ICONO_SOL;
-    boton.setAttribute("aria-label", oscuro ? "Cambiar a tema claro" : "Cambiar a tema oscuro");
+    const etiquetas = {
+      auto: "Tema: Automático (clic para tema claro)",
+      light: "Tema: Claro (clic para tema oscuro)",
+      dark: "Tema: Oscuro (clic para automático)"
+    };
+    boton.innerHTML = modoValido === "auto" ? ICONO_AUTO : (oscuro ? ICONO_LUNA : ICONO_SOL);
+    boton.setAttribute("aria-label", etiquetas[modoValido]);
     boton.setAttribute("aria-pressed", String(oscuro));
-    boton.title = oscuro ? "Cambiar a tema claro" : "Cambiar a tema oscuro";
+    boton.title = etiquetas[modoValido];
   }
   if (guardar) {
-    try { localStorage.setItem("transmitracker-theme", oscuro ? "dark" : "light"); } catch (e) {}
+    try { localStorage.setItem("transmitracker-theme", modoValido); } catch (e) {}
   }
 }
-function alternarTema() { establecerTema(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true); }
-establecerTema(document.documentElement.dataset.theme);
+
+function alternarTema() {
+  const actual = document.documentElement.dataset.themeMode || "auto";
+  const siguiente = actual === "auto" ? "light" : (actual === "light" ? "dark" : "auto");
+  establecerTema(siguiente, true);
+  if (typeof avisar === "function") {
+    const nombres = { auto: "Automático (sistema)", light: "Claro", dark: "Oscuro" };
+    avisar("Tema: " + nombres[siguiente]);
+  }
+}
+
+if (MEDIA_OSCURO && MEDIA_OSCURO.addEventListener) {
+  MEDIA_OSCURO.addEventListener("change", () => {
+    if ((document.documentElement.dataset.themeMode || "auto") === "auto") {
+      establecerTema("auto", false);
+    }
+  });
+}
+establecerTema(document.documentElement.dataset.themeMode || "auto");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const DIACRITICOS = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g");
  let ESTACIONES = [], RUTAS = [];
