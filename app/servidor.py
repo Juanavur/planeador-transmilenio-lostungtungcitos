@@ -155,7 +155,7 @@ def api_rehacer(q):
 
 # Límites de R10: el motor simula persona por persona, así que sin tope un valor enorme
 # (por ejemplo 100 billones) llena la memoria y, como la petición tiene el CANDADO, congela toda la app.
-MAX_PASAJEROS = 1_000_000
+MAX_PASAJEROS = 300_000
 MAX_VENTANA_MIN = 1440
 MIN_FRECUENCIA_MIN, MAX_FRECUENCIA_MIN = 0.05, 60
 MAX_CAPACIDAD = 2000
@@ -181,19 +181,21 @@ def api_fila(q):
     # Llegadas enteras en segundos, con un pico a la mitad de la ventana.
     llegadas = sorted(int(rnd.triangular(0, ventana, ventana / 2)) for _ in range(pasajeros))
     salidas = simular_fila(llegadas, frecuencia, capacidad)                        # R10
-    suma, cuenta = {}, {}
+    # Una sola pasada, con listas por minuto (más rápido que diccionarios).
+    n_min = ventana // 60 + 1
+    suma, cuenta = [0] * n_min, [0] * n_min
     espera_total, espera_max = 0, 0
     for llegada, salida in zip(llegadas, salidas):
         espera = salida - llegada                      # segundos que esperó esta persona
         espera_total += espera
-        espera_max = max(espera_max, espera)
-        minuto_llegada = llegada // 60
-        suma[minuto_llegada] = suma.get(minuto_llegada, 0) + espera
-        cuenta[minuto_llegada] = cuenta.get(minuto_llegada, 0) + 1
-    minutos_llegada = sorted(suma)
+        if espera > espera_max:
+            espera_max = espera
+        m = llegada // 60
+        suma[m] += espera
+        cuenta[m] += 1
     return {"promedio": espera_total / len(salidas) / 60, "maxima": espera_max / 60,   # minutos
             "buses": len(set(salidas)),
-            "curva": [[m, suma[m] / cuenta[m] / 60] for m in minutos_llegada]}
+            "curva": [[m, suma[m] / cuenta[m] / 60] for m in range(n_min) if cuenta[m]]}
 
 
 def api_medir(q):
