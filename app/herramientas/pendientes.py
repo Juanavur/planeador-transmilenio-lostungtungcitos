@@ -8,7 +8,7 @@ Pensado para guardarse en app/herramientas/ y correrse desde la raíz del repo:
 
 Diferencias con medir.py: usa la MEDIANA de llamadas individuales (no el promedio),
 cronometra cada operación por separado y calcula la pendiente al final.
-Con los cuatro tamaños completos tarda ~2 minutos y usa ~1 GB de memoria.
+Con los cuatro tamaños completos tarda varios minutos y puede usar alrededor de 1 GB.
 """
 
 import gc
@@ -68,10 +68,15 @@ def medir_tamano(n, semilla=1):
     carpeta = tempfile.mkdtemp(prefix="pend_%d_" % n)
     estaciones, rutas = generar(n, carpeta, 0)
     res = {}
-    gc.collect()
-    t0 = time.perf_counter()
-    red = Red(carpeta)
-    res["carga (s)"] = time.perf_counter() - t0
+    cargas = []
+    for intento in range(3):
+        gc.collect()
+        t0 = time.perf_counter()
+        red = Red(carpeta)
+        cargas.append(time.perf_counter() - t0)
+        if intento < 2:
+            del red
+    res["carga (s)"] = statistics.median(cargas)
     shutil.rmtree(carpeta)
 
     V = 2000
