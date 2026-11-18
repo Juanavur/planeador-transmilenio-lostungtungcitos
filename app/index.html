@@ -886,7 +886,7 @@ try {
       <div class="cabeza"><h2>¿Cuánto toca esperar en hora pico?</h2><span class="req">R10</span></div>
       <p class="ayuda">Imagina una estación llena: la gente llega, hace fila y sube en orden cuando pasa el bus. Cambia los números y mira cómo crece la espera.</p>
       <div class="fila">
-        <label for="f-pasajeros">Personas que llegan<input id="f-pasajeros" type="number" value="100000" min="1" max="1000000"></label>
+        <label for="f-pasajeros">Personas que llegan<input id="f-pasajeros" type="number" value="100000" min="1" max="300000"></label>
         <label for="f-ventana">Llegan durante (min)<input id="f-ventana" type="number" value="120" min="1" max="1440"></label>
         <label for="f-frecuencia">Un bus cada (min)<input id="f-frecuencia" type="number" value="0.25" step="0.05" min="0.05" max="60"></label>
         <label for="f-capacidad">Cupo por bus<input id="f-capacidad" type="number" value="250" min="1" max="2000"></label>
@@ -1315,7 +1315,7 @@ async function cambio(tipo) {
 
 // ---------- R10
 const LIMITES_FILA = {
-  "f-pasajeros": ["Personas que llegan", 1, 1000000],
+  "f-pasajeros": ["Personas que llegan", 1, 300000],
   "f-ventana": ["Llegan durante (min)", 1, 1440],
   "f-frecuencia": ["Un bus cada (min)", 0.05, 60],
   "f-capacidad": ["Cupo por bus", 1, 2000]
