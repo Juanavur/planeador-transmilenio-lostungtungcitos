@@ -153,26 +153,47 @@ def api_rehacer(q):
     return RED.rehacer()                                                           # R9
 
 
+# Límites de R10: el motor simula persona por persona, así que sin tope un valor enorme
+# (por ejemplo 100 billones) llena la memoria y, como la petición tiene el CANDADO, congela toda la app.
+MAX_PASAJEROS = 1_000_000
+MAX_VENTANA_MIN = 1440
+MIN_FRECUENCIA_MIN, MAX_FRECUENCIA_MIN = 0.05, 60
+MAX_CAPACIDAD = 2000
+
+
+def _numero(q, nombre, defecto, minimo, maximo, etiqueta):
+    try:
+        v = float(q.get(nombre, defecto))
+    except (TypeError, ValueError):
+        raise ValueError("%s debe ser un número" % etiqueta)
+    if v != v or v < minimo or v > maximo:        # v != v detecta NaN
+        raise ValueError("%s debe estar entre %s y %s" % (etiqueta, f"{minimo:,}".replace(",", " "), f"{maximo:,}".replace(",", " ")))
+    return v
+
+
 def api_fila(q):
-    pasajeros = int(q.get("pasajeros", 100000))
-    if pasajeros <= 0:
-        raise ValueError("pasajeros debe ser positivo")
-    ventana = int(float(q.get("ventana", 7200)))
-    frecuencia = float(q.get("frecuencia", 15))  # o int(float(...)) si motor/ exige int
-    capacidad = int(float(q.get("capacidad", 250)))
+    # Se valida ANTES de generar nada. La página manda minutos; el motor trabaja en segundos.
+    pasajeros = int(_numero(q, "pasajeros", 100000, 1, MAX_PASAJEROS, "Personas que llegan"))
+    ventana = int(_numero(q, "ventana", 120, 1, MAX_VENTANA_MIN, "Llegan durante (min)") * 60)
+    frecuencia = _numero(q, "frecuencia", 0.25, MIN_FRECUENCIA_MIN, MAX_FRECUENCIA_MIN, "Un bus cada (min)") * 60
+    capacidad = int(_numero(q, "capacidad", 250, 1, MAX_CAPACIDAD, "Cupo por bus"))
     rnd = random.Random(0)
     # Llegadas enteras en segundos, con un pico a la mitad de la ventana.
     llegadas = sorted(int(rnd.triangular(0, ventana, ventana / 2)) for _ in range(pasajeros))
     salidas = simular_fila(llegadas, frecuencia, capacidad)                        # R10
     suma, cuenta = {}, {}
+    espera_total, espera_max = 0, 0
     for llegada, salida in zip(llegadas, salidas):
+        espera = salida - llegada                      # segundos que esperó esta persona
+        espera_total += espera
+        espera_max = max(espera_max, espera)
         minuto_llegada = llegada // 60
-        suma[minuto_llegada] = suma.get(minuto_llegada, 0) + salida
+        suma[minuto_llegada] = suma.get(minuto_llegada, 0) + espera
         cuenta[minuto_llegada] = cuenta.get(minuto_llegada, 0) + 1
     minutos_llegada = sorted(suma)
-    return {"salida_promedio": sum(salidas) / len(salidas), "ultima_salida": max(salidas),
+    return {"promedio": espera_total / len(salidas) / 60, "maxima": espera_max / 60,   # minutos
             "buses": len(set(salidas)),
-            "curva": [[m, suma[m] / cuenta[m]] for m in minutos_llegada]}
+            "curva": [[m, suma[m] / cuenta[m] / 60] for m in minutos_llegada]}
 
 
 def api_medir(q):
