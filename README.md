@@ -271,3 +271,13 @@ Fuente: GTFS estático de TransMilenio del 14 de julio de 2021 ([datos abiertos 
 Dentro de `motor/` solo se usan `list` (como arreglo), `str`, `csv`, `time` y `random`. No se usan `dict`, `set`, `sorted`, `.sort()`, `min`, `max`, `x in lista`, `.index()`, `.count()`, `bisect`, `heapq`, `collections`, `functools` ni `os`. El revisor `app/herramientas/revisar_prohibidos.py` lo comprueba con el árbol sintáctico de Python, y es más estricto que la regla: también marca `in` sobre textos.
 
 Ninguna regla del sistema está en el front. La app solo llama al motor; lo único que hace por su cuenta es pasar a mayúsculas lo que escribe la persona.
+
+## App desplegada
+
+Puedes probar la aplicación aquí:
+
+https://planeador-transmilenio-lostungtungcitos.onrender.com/
+
+*(Nota: al estar en el plan gratuito de Render, si lleva un rato sin usarse puede tardar unos 30–50 segundos en despertar la primera vez que se abre).*
+
+En Render la configuración es: build command `echo "Listo"` y start command `python app/servidor.py`.
